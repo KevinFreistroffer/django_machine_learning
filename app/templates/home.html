@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} | AI Applications Hub{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 text-center mb-4">
+        <h1 class="display-4">{{ title }}</h1>
+        <p class="lead">{{ description }}</p>
+    </div>
+</div>
+
+<div class="row row-cols-1 row-cols-md-2 g-4">
+    <!-- <div class="col">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Home</h5>
+                <p class="card-text">Return to the main page</p>
+                <a href="{% url 'home' %}" class="btn btn-primary">Launch App</a>
+            </div>
+        </div>
+    </div> -->
+    <div class="col">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">PyTorch</h5>
+                <p class="card-text">Deep learning application using PyTorch</p>
+                <a href="{% url 'pytorch:index' %}" class="btn btn-primary">Launch App</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

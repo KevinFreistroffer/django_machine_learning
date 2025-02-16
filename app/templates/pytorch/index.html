@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2>{{ title }}</h2>
+        <p class="lead">{{ welcome_message }}</p>
+        
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Getting Started</h5>
+                <p class="card-text">
+                    This is your PyTorch application's main page. You can start adding your PyTorch-related content here.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
