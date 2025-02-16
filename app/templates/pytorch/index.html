@@ -8,12 +8,18 @@
         <h2>{{ title }}</h2>
         <p class="lead">{{ welcome_message }}</p>
         
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Getting Started</h5>
-                <p class="card-text">
-                    This is your PyTorch application's main page. You can start adding your PyTorch-related content here.
-                </p>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">House Price Prediction</h5>
+                        <p class="card-text">
+                            Predict house prices using our machine learning model.
+                            Upload a CSV file with house features to get started.
+                        </p>
+                        <a href="{% url 'pytorch:house_prediction' %}" class="btn btn-primary">Try it out</a>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
