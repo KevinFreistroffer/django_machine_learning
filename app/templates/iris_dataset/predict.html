@@ -14,34 +14,30 @@
         </div>
         {% endif %}
 
-        <!-- Tabs -->
-        <ul class="nav nav-tabs mb-3" id="predictionTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="form-tab" data-bs-toggle="tab" data-bs-target="#form-pane" type="button" role="tab">
-                    Manual Input
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="samples-tab" data-bs-toggle="tab" data-bs-target="#samples-pane" type="button" role="tab">
-                    Sample Data 
-                    <span class="badge bg-secondary">{{ stats.total_samples }}</span>
-                </button>
-            </li>
-        </ul>
-
-        <!-- Tab Content -->
-        <div class="tab-content" id="predictionTabsContent">
-            <!-- Manual Input Tab -->
-            <div class="tab-pane fade show active" id="form-pane" role="tabpanel">
+        <!-- Hidden form for submissions -->
+        <form method="post" id="prediction-form" style="display: none;">
+            {% csrf_token %}
+            {% for field in form %}
+            <input type="hidden" name="{{ field.name }}" id="hidden_{{ field.name }}">
+            {% endfor %}
+        </form>
+        
+        <div class="row g-3">
+            <!-- Left side: Input form -->
+            <div class="col-md-5">
                 <div class="card">
                     <div class="card-body">
                         <h5 class="card-title">Input Measurements</h5>
-                        <form method="post" id="prediction-form">
-                            {% csrf_token %}
+                        <div id="manual-form">
                             {% for field in form %}
                             <div class="mb-3">
-                                <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-                                {{ field }}
+                                <label for="visible_{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                                <input type="{{ field.field.widget.input_type }}" 
+                                       class="form-control" 
+                                       id="visible_{{ field.name }}"
+                                       step="0.01"
+                                       onchange="updateHiddenField('{{ field.name }}')"
+                                       value="{{ field.value|default:'' }}">
                                 {% if field.errors %}
                                 <div class="invalid-feedback d-block">
                                     {{ field.errors }}
@@ -49,27 +45,28 @@
                                 {% endif %}
                             </div>
                             {% endfor %}
-                            <button type="submit" class="btn btn-primary">Predict Species</button>
-                        </form>
+                            <button type="button" class="btn btn-primary" onclick="submitForm()">Predict Species</button>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Sample Data Tab -->
-            <div class="tab-pane fade" id="samples-pane" role="tabpanel">
+            <!-- Right side: Sample data -->
+            <div class="col-md-7">
                 <div class="card">
                     <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start mb-3">
-                            <div>
-                                <div class="d-flex gap-2 mb-2">
-                                    {% for species, count in stats.by_species.items %}
-                                    <span class="badge bg-info">{{ species|title }}: {{ count }}</span>
-                                    {% endfor %}
-                                </div>
-                                <p class="small mb-0">Click any row to use that data for prediction</p>
+                        <div>
+                            <h5 class="card-title">Sample Dataset 
+                                <span class="badge bg-secondary">{{ stats.total_samples }} samples</span>
+                            </h5>
+                            <div class="d-flex gap-2 mb-2">
+                                {% for species, count in stats.by_species.items %}
+                                <span class="badge bg-info">{{ species|title }}: {{ count }}</span>
+                                {% endfor %}
                             </div>
+                            <p class="small mb-0">Click any row to use that data for prediction</p>
                         </div>
-                        <div class="table-responsive" style="height: 400px;">
+                        <div class="table-responsive" id="sample-table">
                             <table class="table table-sm table-hover mb-0">
                                 <thead class="sticky-top bg-white">
                                     <tr>
@@ -193,6 +190,7 @@
 .table-responsive {
     scrollbar-width: thin;
     scrollbar-color: #6c757d #f8f9fa;
+    overflow-y: auto;
 }
 
 .sticky-top {
@@ -233,30 +231,71 @@
 .nav-tabs .badge {
     margin-left: 0.5rem;
 }
+
+/* Remove tab-related styles that are no longer needed */
+.nav-tabs .nav-link,
+.nav-tabs .nav-link.active,
+.nav-tabs .badge {
+    display: none;
+}
+
+/* Add spacing between cards */
+.g-3 {
+    --bs-gutter-y: 1rem;
+}
 </style>
 
 <script>
-function useSampleData(sepalLength, sepalWidth, petalLength, petalWidth) {
-    document.querySelector('[name="sepal_length"]').value = sepalLength;
-    document.querySelector('[name="sepal_width"]').value = sepalWidth;
-    document.querySelector('[name="petal_length"]').value = petalLength;
-    document.querySelector('[name="petal_width"]').value = petalWidth;
-    
-    // Switch to form tab before submitting
-    document.getElementById('form-tab').click();
-    
-    // Short delay to allow tab switch animation
-    setTimeout(() => {
-        document.getElementById('prediction-form').submit();
-    }, 100);
+function updateHiddenField(fieldName) {
+    const visibleField = document.getElementById('visible_' + fieldName);
+    const hiddenField = document.getElementById('hidden_' + fieldName);
+    hiddenField.value = visibleField.value;
 }
 
-// Initialize tooltips
+function submitForm() {
+    document.getElementById('prediction-form').submit();
+}
+
+function useSampleData(sepalLength, sepalWidth, petalLength, petalWidth) {
+    // Update hidden form fields
+    document.getElementById('hidden_sepal_length').value = sepalLength;
+    document.getElementById('hidden_sepal_width').value = sepalWidth;
+    document.getElementById('hidden_petal_length').value = petalLength;
+    document.getElementById('hidden_petal_width').value = petalWidth;
+    
+    // Submit the form directly
+    submitForm();
+}
+
+// Initialize tooltips and form fields
 document.addEventListener('DOMContentLoaded', function() {
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl)
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
     });
+    
+    // Initialize form fields
+    const fields = ['sepal_length', 'sepal_width', 'petal_length', 'petal_width'];
+    fields.forEach(field => updateHiddenField(field));
+
+    // Match table height to form height
+    function matchHeight() {
+        const formCard = document.querySelector('.col-md-5 .card-body');
+        const tableContainer = document.getElementById('sample-table');
+        if (formCard && tableContainer) {
+            const formHeight = formCard.offsetHeight;
+            // Subtract header and footer heights
+            const headerHeight = 100; // Approximate height of title and badges
+            const footerHeight = 40;  // Approximate height of legend
+            const tableHeight = formHeight - headerHeight - footerHeight;
+            tableContainer.style.height = `${tableHeight}px`;
+        }
+    }
+
+    // Run on load and window resize
+    matchHeight();
+    window.addEventListener('resize', matchHeight);
 });
 </script>
 {% endblock %} 
