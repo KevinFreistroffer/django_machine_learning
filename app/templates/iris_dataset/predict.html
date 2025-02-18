@@ -120,11 +120,11 @@
 
 <script>
 function fillSampleData() {
-    // Sample data for Iris Versicolor
-    document.querySelector('[name="sepal_length"]').value = "6.4";
-    document.querySelector('[name="sepal_width"]').value = "2.8";
-    document.querySelector('[name="petal_length"]').value = "4.6";
-    document.querySelector('[name="petal_width"]').value = "1.5";
+    // Sample data for Iris Versicolor with slight noise (matching augmented data)
+    document.querySelector('[name="sepal_length"]').value = "6.38";  // Added slight noise
+    document.querySelector('[name="sepal_width"]').value = "2.84";   // Added slight noise
+    document.querySelector('[name="petal_length"]').value = "4.62";  // Added slight noise
+    document.querySelector('[name="petal_width"]').value = "1.48";   // Added slight noise
 }
 </script>
 {% endblock %} 
