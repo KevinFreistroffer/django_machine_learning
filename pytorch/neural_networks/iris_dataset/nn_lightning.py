@@ -26,6 +26,40 @@ for key, value in first_row.items():
 print("}")
 print("-" * 50)
 
+# After loading and before scaling the data
+def augment_data(X, y, noise_factor=0.05, n_synthetic=3):
+    X_augmented = [X]
+    y_augmented = [y]
+    
+    # Add noise to existing samples
+    for _ in range(n_synthetic):
+        noise = np.random.normal(0, noise_factor, X.shape)
+        X_noisy = X + noise
+        X_augmented.append(X_noisy)
+        y_augmented.append(y)
+    
+    # Interpolation between same-class samples
+    for class_idx in range(3):
+        class_samples = X[y == class_idx]
+        for i in range(len(class_samples)):
+            for j in range(i + 1, min(i + 3, len(class_samples))):
+                # Create interpolated sample
+                alpha = np.random.random()
+                interpolated = alpha * class_samples[i] + (1 - alpha) * class_samples[j]
+                X_augmented.append(interpolated.reshape(1, -1))
+                y_augmented.append([class_idx])
+
+    X_augmented = np.vstack(X_augmented)
+    y_augmented = np.concatenate(y_augmented)
+    
+    # Shuffle the augmented dataset
+    shuffle_idx = np.random.permutation(len(X_augmented))
+    return X_augmented[shuffle_idx], y_augmented[shuffle_idx]
+
+# Apply augmentation before scaling
+X, y = augment_data(X, y)
+print(f"\nDataset size after augmentation: {len(X)} samples")
+
 # Scale features
 scaler = StandardScaler()
 X = scaler.fit_transform(X)
@@ -85,34 +119,35 @@ class IrisNN(pl.LightningModule):
         return x
 
     def training_step(self, batch, batch_idx):
-        # This is what happens during each training step
-        X, y = batch
-        logits = self(X)  # Make predictions
-        loss = nn.CrossEntropyLoss()(logits, y)  # Calculate how wrong we were
-        preds = torch.argmax(logits, dim=1)  # Convert predictions to flower types
-        acc = (preds == y).float().mean()  # Calculate accuracy
-        
-        # Keep track of how well we're doing (like keeping a score in a game)
-        self.log('train_loss', loss, prog_bar=True)
-        self.log('train_acc', acc, prog_bar=True)
-        self.log('learning_rate', self.optimizer.param_groups[0]['lr'], prog_bar=True)
-        
-        return loss
-
-    def validation_step(self, batch, batch_idx):
-        # Similar to training step, but for checking how well we do on new data
         X, y = batch
         logits = self(X)
         loss = nn.CrossEntropyLoss()(logits, y)
         preds = torch.argmax(logits, dim=1)
         acc = (preds == y).float().mean()
         
-        # Calculate F1 score (a more detailed way to measure accuracy)
-        f1 = self._f1_score(preds, y)
+        # Log metrics for monitoring overfitting
+        self.log('train_loss', loss, on_epoch=True, prog_bar=True)
+        self.log('train_acc', acc, on_epoch=True, prog_bar=True)
+        self.log('learning_rate', self.optimizer.param_groups[0]['lr'], prog_bar=True)
         
-        self.log('val_loss', loss, prog_bar=True)
-        self.log('val_acc', acc, prog_bar=True)
-        self.log('val_f1', f1, prog_bar=True)
+        return loss
+
+    def validation_step(self, batch, batch_idx):
+        X, y = batch
+        logits = self(X)
+        loss = nn.CrossEntropyLoss()(logits, y)
+        preds = torch.argmax(logits, dim=1)
+        acc = (preds == y).float().mean()
+        
+        # Log metrics for monitoring overfitting
+        self.log('val_loss', loss, on_epoch=True, prog_bar=True)
+        self.log('val_acc', acc, on_epoch=True, prog_bar=True)
+        self.log('val_f1', self._f1_score(preds, y), on_epoch=True, prog_bar=True)
+        
+        # Calculate and log the gap between train and val metrics
+        self.log('acc_gap', self.trainer.callback_metrics.get('train_acc', 0) - acc, 
+                on_epoch=True, prog_bar=True)
+        
         return loss
 
     def _f1_score(self, preds, targets, eps=1e-8):
@@ -183,24 +218,27 @@ def main():
     # Create model
     model = IrisNN()
 
-    # Early stopping callback
+    # Early stopping callback with more careful monitoring
     early_stopping = EarlyStopping(
         monitor='val_loss',
         patience=20,
         verbose=True,
-        mode='min'
+        mode='min',
+        min_delta=1e-4  # Minimum change to qualify as an improvement
     )
 
-    # Set up the training process with helpful features
+    # Set up the training process
     trainer = pl.Trainer(
-        max_epochs=200,  # Maximum number of times to go through the data
-        callbacks=[early_stopping],  # Stops training if we're not improving
-        enable_progress_bar=True,  # Shows us how we're doing
-        log_every_n_steps=5,  # How often to update our progress
-        gradient_clip_val=1.0,  # Prevents learning steps that are too big
-        accumulate_grad_batches=2,  # Helps make training more stable
-        precision="16-mixed",  # Uses less memory while training
-        deterministic=True,  # Makes sure we get the same results each time
+        max_epochs=200,
+        callbacks=[early_stopping],
+        enable_progress_bar=True,
+        log_every_n_steps=5,
+        gradient_clip_val=1.0,
+        accumulate_grad_batches=2,
+        precision="16-mixed",
+        deterministic=True,
+        # Add validation checks every epoch
+        check_val_every_n_epoch=1,
     )
 
     # Train the model
