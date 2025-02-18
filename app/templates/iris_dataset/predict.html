@@ -14,13 +14,13 @@
         </div>
         {% endif %}
         
-        <div class="row">
+        <div class="row g-4">
             <!-- Left side: Input form -->
             <div class="col-md-5">
-                <div class="card">
-                    <div class="card-body">
+                <div class="card h-100">
+                    <div class="card-body d-flex flex-column">
                         <h5 class="card-title">Input Measurements</h5>
-                        <form method="post" id="prediction-form">
+                        <form method="post" id="prediction-form" class="flex-grow-1 d-flex flex-column">
                             {% csrf_token %}
                             {% for field in form %}
                             <div class="mb-3">
@@ -33,7 +33,9 @@
                                 {% endif %}
                             </div>
                             {% endfor %}
-                            <button type="submit" class="btn btn-primary">Predict Species</button>
+                            <div class="mt-auto">
+                                <button type="submit" class="btn btn-primary">Predict Species</button>
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -41,14 +43,24 @@
 
             <!-- Right side: Sample data -->
             <div class="col-md-7">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">Sample Dataset</h5>
-                        <p class="small">Click any row to use that data:</p>
-                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-                            <table class="table table-sm table-hover">
+                <div class="card h-100">
+                    <div class="card-body d-flex flex-column">
+                        <div>
+                            <h5 class="card-title">Sample Dataset 
+                                <span class="badge bg-secondary">{{ stats.total_samples }} samples</span>
+                            </h5>
+                            <div class="d-flex gap-2 mb-2">
+                                {% for species, count in stats.by_species.items %}
+                                <span class="badge bg-info">{{ species|title }}: {{ count }}</span>
+                                {% endfor %}
+                            </div>
+                            <p class="small mb-2">Click any row to use that data:</p>
+                        </div>
+                        <div class="table-responsive flex-grow-1">
+                            <table class="table table-sm table-hover mb-0">
                                 <thead class="sticky-top bg-white">
                                     <tr>
+                                        <th>#</th>
                                         <th>SL</th>
                                         <th>SW</th>
                                         <th>PL</th>
@@ -59,14 +71,18 @@
                                 <tbody>
                                     {% for sample in sample_data %}
                                     <tr style="cursor: pointer;" 
-                                        onclick="useSampleData({{ sample.sepal_length }}, {{ sample.sepal_width }}, {{ sample.petal_length }}, {{ sample.petal_width }})"
+                                        onclick="useSampleData('{{ sample.sepal_length }}', '{{ sample.sepal_width }}', '{{ sample.petal_length }}', '{{ sample.petal_width }}')"
                                         data-bs-toggle="tooltip" 
-                                        title="Click to use this data">
+                                        title="Click to use this data"
+                                        class="sample-row {% if sample.species == 'setosa' %}table-info{% elif sample.species == 'versicolor' %}table-warning{% else %}table-success{% endif %} opacity-75 hover-opacity-100">
+                                        <td>{{ sample.id|add:"1" }}</td>
                                         <td>{{ sample.sepal_length }}</td>
                                         <td>{{ sample.sepal_width }}</td>
                                         <td>{{ sample.petal_length }}</td>
                                         <td>{{ sample.petal_width }}</td>
-                                        <td><span class="badge bg-info">{{ sample.species|title }}</span></td>
+                                        <td><span class="badge {% if sample.species == 'setosa' %}bg-info{% elif sample.species == 'versicolor' %}bg-warning{% else %}bg-success{% endif %}">
+                                            {{ sample.species|title }}
+                                        </span></td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
@@ -160,12 +176,56 @@
     </div>
 </div>
 
+<style>
+/* Update the styles */
+.card {
+    height: 100%;
+}
+
+.table-responsive {
+    height: 300px;  /* Fixed height */
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #6c757d #f8f9fa;
+}
+
+.sticky-top {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background-color: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.hover-opacity-100:hover {
+    opacity: 1 !important;
+}
+
+.table-responsive::-webkit-scrollbar {
+    width: 8px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background: #f8f9fa;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background-color: #6c757d;
+    border-radius: 4px;
+}
+
+/* Add spacing between cards */
+.g-4 {
+    --bs-gutter-y: 1.5rem;
+}
+</style>
+
 <script>
 function useSampleData(sepalLength, sepalWidth, petalLength, petalWidth) {
-    document.querySelector('[name="sepal_length"]').value = sepalLength.toFixed(2);
-    document.querySelector('[name="sepal_width"]').value = sepalWidth.toFixed(2);
-    document.querySelector('[name="petal_length"]').value = petalLength.toFixed(2);
-    document.querySelector('[name="petal_width"]').value = petalWidth.toFixed(2);
+    document.querySelector('[name="sepal_length"]').value = sepalLength;
+    document.querySelector('[name="sepal_width"]').value = sepalWidth;
+    document.querySelector('[name="petal_length"]').value = petalLength;
+    document.querySelector('[name="petal_width"]').value = petalWidth;
     
     // Auto-submit the form
     document.getElementById('prediction-form').submit();

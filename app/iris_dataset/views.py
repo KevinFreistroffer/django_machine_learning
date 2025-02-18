@@ -52,20 +52,24 @@ def get_actual_class(features):
         return 'versicolor'
 
 def iris_prediction(request):
-    # Load some sample data from the actual dataset
+    # Load all data from the dataset
     iris = load_iris()
-    # Get 2 samples from each class (6 total samples)
-    sample_indices = [0, 25, 50, 75, 100, 125]  # These indices will get samples from each class
+    
+    # Create sample data with all samples
     sample_data = [
         {
-            'sepal_length': iris.data[i][0],
-            'sepal_width': iris.data[i][1],
-            'petal_length': iris.data[i][2],
-            'petal_width': iris.data[i][3],
-            'species': iris.target_names[iris.target[i]]
+            'sepal_length': float(iris.data[i][0]),  # Convert to float for JSON serialization
+            'sepal_width': float(iris.data[i][1]),
+            'petal_length': float(iris.data[i][2]),
+            'petal_width': float(iris.data[i][3]),
+            'species': iris.target_names[iris.target[i]],
+            'id': i  # Add an ID for easier reference
         }
-        for i in sample_indices
+        for i in range(len(iris.data))
     ]
+    
+    # Sort the data by species and then by sepal length
+    sample_data.sort(key=lambda x: (x['species'], x['sepal_length']))
 
     prediction_result = None
     if request.method == 'POST':
@@ -139,5 +143,12 @@ def iris_prediction(request):
         'form': form,
         'prediction': prediction_result,
         'sample_data': sample_data,
-        'title': 'Iris Species Prediction'
+        'title': 'Iris Species Prediction',
+        'stats': {
+            'total_samples': len(sample_data),
+            'by_species': {
+                species: len([s for s in sample_data if s['species'] == species])
+                for species in iris.target_names
+            }
+        }
     })
