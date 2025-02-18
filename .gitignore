@@ -32,3 +32,5 @@ coverage/
 # Operating System
 .DS_Store
 Thumbs.db
+
+venv/

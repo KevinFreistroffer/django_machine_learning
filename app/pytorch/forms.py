@@ -8,12 +8,12 @@ class HouseDataCSVForm(forms.Form):
     ) 
 
 class HouseDataForm(forms.Form):
-    MedInc = forms.FloatField(label='Median Income')
-    HouseAge = forms.FloatField(label='House Age')
-    AveRooms = forms.FloatField(label='Average Number of Rooms')
-    AveBedrms = forms.FloatField(label='Average Number of Bedrooms')
-    Population = forms.IntegerField(label='Population')
-    AveOccup = forms.IntegerField(label='Average Occupancy')
-    Latitude = forms.FloatField(label='Latitude')
-    Longitude = forms.FloatField(label='Longitude')
+    MedInc = forms.DecimalField(label='Median Income', max_digits=10, decimal_places=5, required=True)
+    HouseAge = forms.DecimalField(label='House Age', max_digits=10, decimal_places=5, required=True)
+    AveRooms = forms.DecimalField(label='Average Number of Rooms', max_digits=10, decimal_places=5, required=True)
+    AveBedrms = forms.DecimalField(label='Average Number of Bedrooms', max_digits=10, decimal_places=5, required=True)
+    Population = forms.IntegerField(label='Population', required=True)
+    AveOccup = forms.DecimalField(label='Average Occupancy', max_digits=10, decimal_places=5, required=True)
+    Latitude = forms.DecimalField(label='Latitude', max_digits=10, decimal_places=5, required=True)
+    Longitude = forms.DecimalField(label='Longitude', max_digits=10, decimal_places=5, required=True)
 

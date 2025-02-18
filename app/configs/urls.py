@@ -22,4 +22,5 @@ urlpatterns = [
     path('', views.home, name='home'),
     path('admin/', admin.site.urls),
     path('pytorch/', include('pytorch.urls')),
+    path('iris/', include('iris_dataset.urls')),
 ]

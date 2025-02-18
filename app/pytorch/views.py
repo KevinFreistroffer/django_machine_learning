@@ -7,20 +7,34 @@ import json
 import torch
 import torch.nn as nn  # Neural network modules
 import torch.nn.functional as F  # Activation functions and other functional operations
+import numpy as np
+from sklearn.preprocessing import StandardScaler
 
 
 class HousePriceModel(nn.Module):
     def __init__(self, input_features):
         super(HousePriceModel, self).__init__()
-        self.fc1 = nn.Linear(input_features, 128)
-        self.fc2 = nn.Linear(128, 64)
-        self.fc3 = nn.Linear(64, 32)
-        self.fc4 = nn.Linear(32, 1)
+        # Input layer
+        self.fc1 = nn.Linear(input_features, 256)
+        self.bn1 = nn.BatchNorm1d(256)
+        self.dropout1 = nn.Dropout(0.3)
+        
+        # Hidden layers
+        self.fc2 = nn.Linear(256, 128)
+        self.bn2 = nn.BatchNorm1d(128)
+        self.dropout2 = nn.Dropout(0.2)
+        
+        self.fc3 = nn.Linear(128, 64)
+        self.bn3 = nn.BatchNorm1d(64)
+        self.dropout3 = nn.Dropout(0.1)
+        
+        # Output layer
+        self.fc4 = nn.Linear(64, 1)
         
     def forward(self, x):
-        x = torch.relu(self.fc1(x))
-        x = torch.relu(self.fc2(x))
-        x = torch.relu(self.fc3(x))
+        x = self.dropout1(self.bn1(F.relu(self.fc1(x))))
+        x = self.dropout2(self.bn2(F.relu(self.fc2(x))))
+        x = self.dropout3(self.bn3(F.relu(self.fc3(x))))
         return self.fc4(x)
 
 def index(request):
@@ -39,25 +53,34 @@ def house_prediction(request):
     """
     if request.method == 'POST':
         form = HouseDataForm(request.POST)
+        print("Form Data:", request.POST)
         if form.is_valid():
             try:
                 print("Form is valid")
-                # Get form data and convert to DataFrame - modified to use single values
+                # Get form data and convert to DataFrame
                 form_data = {
-                    field: form.cleaned_data[field]  # Remove the list wrapper
+                    field: [float(form.cleaned_data[field])]  # Convert all values to float
                     for field in form.cleaned_data
                 }
-                # Convert to DataFrame with a single row
-                df = pd.DataFrame([form_data])  # Wrap the dictionary in a list
+                df = pd.DataFrame(form_data)
                 
                 # Get features (all columns except 'Price' if present)
-                features = df.values
+                features = df.values.astype(np.float32)  # Explicitly convert to float32
                 
                 # Convert features to tensor
                 features_tensor = torch.FloatTensor(features)
                 
+                # Load model with weights_only=False since we need the full state dict
                 model = HousePriceModel(input_features=features.shape[1])
-                checkpoint = torch.load('media/house_price_model.ckpt')
+                checkpoint = torch.load('media/house_price_model.ckpt', weights_only=False)
+                # Load scalers with allow_pickle=True
+                scaler_data = np.load("media/scalers.npy", allow_pickle=True).item()
+                
+                # Reconstruct the scaler
+                scaler_y = StandardScaler()
+                scaler_y.mean_ = scaler_data['scaler_y_mean']
+                scaler_y.scale_ = scaler_data['scaler_y_scale']
+                
                 state_dict = checkpoint['state_dict']
                 
                 new_state_dict = {}
@@ -71,10 +94,11 @@ def house_prediction(request):
                 # Make predictions
                 with torch.no_grad():
                     predictions = model(features_tensor)
-                    predictions = predictions.numpy()
+                    predictions = scaler_y.inverse_transform(predictions.numpy())
                 
-                # Update the prediction assignment
-                form_data['Predicted_Price'] = float(predictions[0][0])  # Convert to regular float
+                # Scale the prediction to $100,000s
+                scaled_prediction = float(predictions[0][0]) * 100000
+                form_data['Predicted_Price'] = scaled_prediction
                 print(form_data)
                 return render(request, 'pytorch/prediction_result.html', {
                     'form': form,
@@ -86,7 +110,8 @@ def house_prediction(request):
                 print(f"Error processing form: {str(e)}")
                 form.add_error(None, f"Error processing form: {str(e)}")
         else:
-            print("Form is not valid")
+            print("Form validation errors:", form.errors)
+            print("Form non-field errors:", form.non_field_errors())
     else:
         form = HouseDataForm()
     
