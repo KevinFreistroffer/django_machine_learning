@@ -9,24 +9,28 @@ class IrisNN(nn.Module):
     def __init__(self):
         super(IrisNN, self).__init__()
         # Network architecture
-        self.fc1 = nn.Linear(4, 128)  # 4 input features
-        self.bn1 = nn.BatchNorm1d(128)
-        self.fc2 = nn.Linear(128, 96)
-        self.bn2 = nn.BatchNorm1d(96)
-        self.fc3 = nn.Linear(96, 64)
-        self.bn3 = nn.BatchNorm1d(64)
-        self.fc4 = nn.Linear(64, 32)
-        self.bn4 = nn.BatchNorm1d(32)
-        self.fc5 = nn.Linear(32, 3)  # 3 output classes
-        self.relu = nn.ReLU()
-        self.dropout = nn.Dropout(0.3)
+        self.fc1 = nn.Linear(4, 64)
+        self.bn1 = nn.BatchNorm1d(64)
+        self.fc2 = nn.Linear(64, 32)
+        self.bn2 = nn.BatchNorm1d(32)
+        self.fc3 = nn.Linear(32, 3)
+        self.relu = nn.LeakyReLU(0.1)
+        self.dropout = nn.Dropout(0.2)
+
+    def _init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.kaiming_normal_(m.weight, mode='fan_in', nonlinearity='leaky_relu')
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.BatchNorm1d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
 
     def forward(self, x):
         x = self.dropout(self.relu(self.bn1(self.fc1(x))))
         x = self.dropout(self.relu(self.bn2(self.fc2(x))))
-        x = self.dropout(self.relu(self.bn3(self.fc3(x))))
-        x = self.dropout(self.relu(self.bn4(self.fc4(x))))
-        x = self.fc5(x)
+        x = self.fc3(x)
         return x
 
 def get_actual_class(features):
@@ -62,6 +66,7 @@ def iris_prediction(request):
                 
                 # Load the model
                 model = IrisNN()
+                model._init_weights()  # Initialize weights properly
                 checkpoint = torch.load('media/iris/iris_model.ckpt')
                 model.load_state_dict(checkpoint['state_dict'])
                 model.eval()

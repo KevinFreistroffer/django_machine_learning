@@ -42,64 +42,124 @@ y_test = torch.tensor(y_test, dtype=torch.long)
 class IrisNN(pl.LightningModule):
     def __init__(self):
         super(IrisNN, self).__init__()
-        # Network architecture
-        self.fc1 = nn.Linear(4, 128)  # 4 input features
-        self.bn1 = nn.BatchNorm1d(128)
-        self.fc2 = nn.Linear(128, 96)
-        self.bn2 = nn.BatchNorm1d(96)
-        self.fc3 = nn.Linear(96, 64)
-        self.bn3 = nn.BatchNorm1d(64)
-        self.fc4 = nn.Linear(64, 32)
-        self.bn4 = nn.BatchNorm1d(32)
-        self.fc5 = nn.Linear(32, 3)  # 3 output classes
-        self.relu = nn.ReLU()
-        self.dropout = nn.Dropout(0.3)  # Slightly increased dropout
+        # Think of this network like a chain of smart filters
+        # Each filter (layer) learns to recognize different patterns in the flower measurements
+        
+        # First layer: Takes in 4 measurements and processes them into 64 different ways of looking at the data
+        self.fc1 = nn.Linear(4, 64)  
+        # Normalizes the data to make it easier for the network to learn (like standardizing test scores)
+        self.bn1 = nn.BatchNorm1d(64)
+        
+        # Second layer: Combines the 64 patterns into 32 more complex patterns
+        self.fc2 = nn.Linear(64, 32)
+        self.bn2 = nn.BatchNorm1d(32)
+        
+        # Final layer: Makes the actual decision - which of the 3 iris types it thinks it is
+        self.fc3 = nn.Linear(32, 3)
+        
+        # LeakyReLU: Like a smart on/off switch that lets a little information through even when "off"
+        self.relu = nn.LeakyReLU(0.1)
+        # Dropout: Randomly turns off some neurons during training (like studying with different study materials)
+        self.dropout = nn.Dropout(0.2)
+
+        # Initialize the network's weights (like setting up the starting point for learning)
+        self._init_weights()
+
+    def _init_weights(self):
+        # This sets up the initial weights in a smart way
+        # Think of it like giving the network a good starting point instead of random guesses
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.kaiming_normal_(m.weight, mode='fan_in', nonlinearity='leaky_relu')
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.BatchNorm1d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
 
     def forward(self, x):
-        x = self.dropout(self.relu(self.bn1(self.fc1(x))))
-        x = self.dropout(self.relu(self.bn2(self.fc2(x))))
-        x = self.dropout(self.relu(self.bn3(self.fc3(x))))
-        x = self.dropout(self.relu(self.bn4(self.fc4(x))))
-        x = self.fc5(x)
+        # This is like an assembly line for processing the flower measurements
+        x = self.dropout(self.relu(self.bn1(self.fc1(x))))  # First processing step
+        x = self.dropout(self.relu(self.bn2(self.fc2(x))))  # Second processing step
+        x = self.fc3(x)  # Final decision making
         return x
-    
+
     def training_step(self, batch, batch_idx):
+        # This is what happens during each training step
         X, y = batch
-        logits = self(X)
-        loss = nn.CrossEntropyLoss()(logits, y)
-        # Calculate accuracy
-        preds = torch.argmax(logits, dim=1)
-        acc = (preds == y).float().mean()
-        self.log('train_loss', loss)
-        self.log('train_acc', acc)
+        logits = self(X)  # Make predictions
+        loss = nn.CrossEntropyLoss()(logits, y)  # Calculate how wrong we were
+        preds = torch.argmax(logits, dim=1)  # Convert predictions to flower types
+        acc = (preds == y).float().mean()  # Calculate accuracy
+        
+        # Keep track of how well we're doing (like keeping a score in a game)
+        self.log('train_loss', loss, prog_bar=True)
+        self.log('train_acc', acc, prog_bar=True)
+        self.log('learning_rate', self.optimizer.param_groups[0]['lr'], prog_bar=True)
+        
         return loss
 
     def validation_step(self, batch, batch_idx):
+        # Similar to training step, but for checking how well we do on new data
         X, y = batch
         logits = self(X)
         loss = nn.CrossEntropyLoss()(logits, y)
         preds = torch.argmax(logits, dim=1)
         acc = (preds == y).float().mean()
-        self.log('val_loss', loss)
-        self.log('val_acc', acc)
+        
+        # Calculate F1 score (a more detailed way to measure accuracy)
+        f1 = self._f1_score(preds, y)
+        
+        self.log('val_loss', loss, prog_bar=True)
+        self.log('val_acc', acc, prog_bar=True)
+        self.log('val_f1', f1, prog_bar=True)
         return loss
 
+    def _f1_score(self, preds, targets, eps=1e-8):
+        # F1 score helps us know if we're good at identifying all types of flowers
+        # It's like making sure we're not just good at spotting one type while missing others
+        tp = torch.zeros(3).to(preds.device)  # Correct predictions for each flower type
+        fp = torch.zeros(3).to(preds.device)  # Wrong predictions (said it was this type when it wasn't)
+        fn = torch.zeros(3).to(preds.device)  # Missed predictions (didn't catch this type when it was)
+        
+        for i in range(3):
+            tp[i] = ((preds == i) & (targets == i)).sum()
+            fp[i] = ((preds == i) & (targets != i)).sum()
+            fn[i] = ((preds != i) & (targets == i)).sum()
+        
+        precision = tp / (tp + fp + eps)  # How many of our positive predictions were correct
+        recall = tp / (tp + fn + eps)     # How many actual positives did we catch
+        f1 = 2 * (precision * recall) / (precision + recall + eps)  # Combines both measures
+        return f1.mean()
+
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=0.001, weight_decay=1e-5)
-        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer,
-            mode='min',
-            factor=0.2,
-            patience=10,
-            verbose=True
+        # Set up the learning process
+        self.optimizer = torch.optim.AdamW(
+            self.parameters(),
+            lr=0.001,
+            weight_decay=0.01,
+            amsgrad=True
         )
-        return {
-            "optimizer": optimizer,
-            "lr_scheduler": {
-                "scheduler": scheduler,
-                "monitor": "val_loss"
-            }
+        
+        # Calculate steps_per_epoch based on dataset size and batch size
+        steps_per_epoch = len(X_train) // 32  # batch_size = 32
+        
+        # Learning schedule
+        scheduler = {
+            "scheduler": torch.optim.lr_scheduler.OneCycleLR(
+                self.optimizer,
+                max_lr=0.001,
+                epochs=200,
+                steps_per_epoch=steps_per_epoch,  # Use calculated value
+                pct_start=0.3,
+                div_factor=25.0,
+                final_div_factor=1000.0
+            ),
+            "interval": "step",
+            "frequency": 1
         }
+        
+        return [self.optimizer], [scheduler]
 
 def main():
     # Create data loaders
@@ -131,14 +191,16 @@ def main():
         mode='min'
     )
 
-    # Create trainer
+    # Set up the training process with helpful features
     trainer = pl.Trainer(
-        max_epochs=200,
-        callbacks=[early_stopping],
-        enable_progress_bar=True,
-        log_every_n_steps=10,
-        gradient_clip_val=0.5,
-        accumulate_grad_batches=2
+        max_epochs=200,  # Maximum number of times to go through the data
+        callbacks=[early_stopping],  # Stops training if we're not improving
+        enable_progress_bar=True,  # Shows us how we're doing
+        log_every_n_steps=5,  # How often to update our progress
+        gradient_clip_val=1.0,  # Prevents learning steps that are too big
+        accumulate_grad_batches=2,  # Helps make training more stable
+        precision="16-mixed",  # Uses less memory while training
+        deterministic=True,  # Makes sure we get the same results each time
     )
 
     # Train the model
