@@ -37,16 +37,6 @@ class HousePriceModel(nn.Module):
         x = self.dropout3(self.bn3(F.relu(self.fc3(x))))
         return self.fc4(x)
 
-# def index(request):
-#     """
-#     Main view for PyTorch application
-#     """
-#     context = {
-#         'title': 'PyTorch App',
-#         'welcome_message': 'Welcome to the PyTorch Application!'
-#     }
-#     return render(request, 'pages/housepriceprediction/house_prediction.html', context)
-
 def index(request):
     """
     View for house price prediction

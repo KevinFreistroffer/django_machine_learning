@@ -139,7 +139,7 @@ def iris_prediction(request):
     else:
         form = IrisDataForm()
     
-    return render(request, 'iris_dataset/predict.html', {
+    return render(request, 'pages/iris/predict.html', {
         'form': form,
         'prediction': prediction_result,
         'sample_data': sample_data,

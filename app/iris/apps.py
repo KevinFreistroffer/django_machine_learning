@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class PytorchConfig(AppConfig):
+class IrisDatasetConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'pytorch'
+    name = 'iris'
