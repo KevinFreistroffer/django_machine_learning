@@ -191,6 +191,7 @@
     scrollbar-width: thin;
     scrollbar-color: #6c757d #f8f9fa;
     overflow-y: auto;
+    position: relative;
 }
 
 .sticky-top {
@@ -243,6 +244,17 @@
 .g-3 {
     --bs-gutter-y: 1rem;
 }
+
+/* Add this new rule to contain tooltips */
+.tooltip {
+    position: absolute;
+    z-index: 1;
+}
+
+/* Ensure tooltip doesn't get cut off at the bottom */
+#sample-table {
+    padding-bottom: 2rem;
+}
 </style>
 
 <script>
@@ -257,14 +269,17 @@ function submitForm() {
 }
 
 function useSampleData(sepalLength, sepalWidth, petalLength, petalWidth) {
+    // Update visible form fields
+    document.getElementById('visible_sepal_length').value = sepalLength;
+    document.getElementById('visible_sepal_width').value = sepalWidth;
+    document.getElementById('visible_petal_length').value = petalLength;
+    document.getElementById('visible_petal_width').value = petalWidth;
+    
     // Update hidden form fields
     document.getElementById('hidden_sepal_length').value = sepalLength;
     document.getElementById('hidden_sepal_width').value = sepalWidth;
     document.getElementById('hidden_petal_length').value = petalLength;
     document.getElementById('hidden_petal_width').value = petalWidth;
-    
-    // Submit the form directly
-    submitForm();
 }
 
 // Initialize tooltips and form fields
