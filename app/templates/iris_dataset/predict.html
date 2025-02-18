@@ -6,7 +6,7 @@
 <div class="row">
     <div class="col-12">
         <h2>Iris Species Prediction</h2>
-        <p class="lead">Enter the measurements below to predict the Iris species</p>
+        <p class="lead">Enter measurements manually or select from sample data to predict the Iris species</p>
         
         {% if form.non_field_errors %}
         <div class="alert alert-danger">
@@ -15,11 +15,12 @@
         {% endif %}
         
         <div class="row">
-            <div class="col-md-6">
+            <!-- Left side: Input form -->
+            <div class="col-md-5">
                 <div class="card">
                     <div class="card-body">
                         <h5 class="card-title">Input Measurements</h5>
-                        <form method="post">
+                        <form method="post" id="prediction-form">
                             {% csrf_token %}
                             {% for field in form %}
                             <div class="mb-3">
@@ -33,14 +34,54 @@
                             </div>
                             {% endfor %}
                             <button type="submit" class="btn btn-primary">Predict Species</button>
-                            <button type="button" class="btn btn-secondary" onclick="fillSampleData()">Fill Sample Data</button>
                         </form>
                     </div>
                 </div>
             </div>
-            
+
+            <!-- Right side: Sample data -->
+            <div class="col-md-7">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Sample Dataset</h5>
+                        <p class="small">Click any row to use that data:</p>
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table table-sm table-hover">
+                                <thead class="sticky-top bg-white">
+                                    <tr>
+                                        <th>SL</th>
+                                        <th>SW</th>
+                                        <th>PL</th>
+                                        <th>PW</th>
+                                        <th>Species</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for sample in sample_data %}
+                                    <tr style="cursor: pointer;" 
+                                        onclick="useSampleData({{ sample.sepal_length }}, {{ sample.sepal_width }}, {{ sample.petal_length }}, {{ sample.petal_width }})"
+                                        data-bs-toggle="tooltip" 
+                                        title="Click to use this data">
+                                        <td>{{ sample.sepal_length }}</td>
+                                        <td>{{ sample.sepal_width }}</td>
+                                        <td>{{ sample.petal_length }}</td>
+                                        <td>{{ sample.petal_width }}</td>
+                                        <td><span class="badge bg-info">{{ sample.species|title }}</span></td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="mt-2 small text-muted">
+                            <strong>Legend:</strong> SL = Sepal Length, SW = Sepal Width, PL = Petal Length, PW = Petal Width
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Prediction results -->
             {% if prediction %}
-            <div class="col-md-6">
+            <div class="col-12 mt-4">
                 <div class="card">
                     <div class="card-body">
                         <h5 class="card-title">Prediction Result</h5>
@@ -95,6 +136,7 @@
             {% endif %}
         </div>
         
+        <!-- Move About section to the bottom -->
         <div class="mt-4">
             <div class="card">
                 <div class="card-body">
@@ -119,12 +161,22 @@
 </div>
 
 <script>
-function fillSampleData() {
-    // Sample data for Iris Versicolor with slight noise (matching augmented data)
-    document.querySelector('[name="sepal_length"]').value = "6.38";  // Added slight noise
-    document.querySelector('[name="sepal_width"]').value = "2.84";   // Added slight noise
-    document.querySelector('[name="petal_length"]').value = "4.62";  // Added slight noise
-    document.querySelector('[name="petal_width"]').value = "1.48";   // Added slight noise
+function useSampleData(sepalLength, sepalWidth, petalLength, petalWidth) {
+    document.querySelector('[name="sepal_length"]').value = sepalLength.toFixed(2);
+    document.querySelector('[name="sepal_width"]').value = sepalWidth.toFixed(2);
+    document.querySelector('[name="petal_length"]').value = petalLength.toFixed(2);
+    document.querySelector('[name="petal_width"]').value = petalWidth.toFixed(2);
+    
+    // Auto-submit the form
+    document.getElementById('prediction-form').submit();
 }
+
+// Initialize tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+});
 </script>
 {% endblock %} 

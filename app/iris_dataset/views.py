@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 from sklearn.preprocessing import StandardScaler
+from sklearn.datasets import load_iris
 
 class IrisNN(nn.Module):
     def __init__(self):
@@ -51,6 +52,21 @@ def get_actual_class(features):
         return 'versicolor'
 
 def iris_prediction(request):
+    # Load some sample data from the actual dataset
+    iris = load_iris()
+    # Get 2 samples from each class (6 total samples)
+    sample_indices = [0, 25, 50, 75, 100, 125]  # These indices will get samples from each class
+    sample_data = [
+        {
+            'sepal_length': iris.data[i][0],
+            'sepal_width': iris.data[i][1],
+            'petal_length': iris.data[i][2],
+            'petal_width': iris.data[i][3],
+            'species': iris.target_names[iris.target[i]]
+        }
+        for i in sample_indices
+    ]
+
     prediction_result = None
     if request.method == 'POST':
         form = IrisDataForm(request.POST)
@@ -122,5 +138,6 @@ def iris_prediction(request):
     return render(request, 'iris_dataset/predict.html', {
         'form': form,
         'prediction': prediction_result,
+        'sample_data': sample_data,
         'title': 'Iris Species Prediction'
     })
