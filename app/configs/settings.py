@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.humanize',
     'pytorch',
     'iris_dataset',
+    'housepriceprediction',
 ]
 
 MIDDLEWARE = [
