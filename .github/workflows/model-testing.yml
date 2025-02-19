@@ -30,6 +30,11 @@ jobs:
         pip install -r pytorch/requirements.txt
         pip install pytest pytest-cov scikit-learn
         
+    - name: Create directories
+      run: |
+        mkdir -p pytorch/neural_networks/iris_dataset/data
+        mkdir -p pytorch/neural_networks/iris_dataset/checkpoints
+        
     - name: Generate test datasets
       run: |
         python pytorch/neural_networks/iris_dataset/data/generate_test_data.py
