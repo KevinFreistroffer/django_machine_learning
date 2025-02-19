@@ -23,7 +23,8 @@ spec:
       # Details about the container that will run your app
       - name: ml-app
         # Where to find your Docker image
-        image: myregistry.azurecr.io/ml-app:latest
+        image: kevinf85/ml-app:latest
+        imagePullPolicy: IfNotPresent
         ports:
         # The port your app listens on
         - containerPort: 8000   # This is your Django app's port inside the container
