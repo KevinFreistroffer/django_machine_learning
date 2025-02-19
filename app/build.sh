@@ -19,8 +19,8 @@ python -m venv venv
 echo "Activating virtual environment..."
 source venv/bin/activate
 
-echo "Freezing requirements..."
-pip freeze > requirements.txt
+# echo "Freezing requirements..."
+# pip freeze > requirements.txt
 
 echo "Installing requirements..."
 # Modify this line as needed for your package manager (pip, poetry, etc.)
