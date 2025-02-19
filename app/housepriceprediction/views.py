@@ -39,16 +39,6 @@ class HousePriceModel(nn.Module):
 
 def index(request):
     """
-    Main view for PyTorch application
-    """
-    context = {
-        'title': 'PyTorch App',
-        'welcome_message': 'Welcome to the PyTorch Application!'
-    }
-    return render(request, 'pytorch/index.html', context)
-
-def house_prediction(request):
-    """
     View for house price prediction
     """
     if request.method == 'POST':
@@ -100,7 +90,7 @@ def house_prediction(request):
                 scaled_prediction = float(predictions[0][0]) * 100000
                 form_data['Predicted_Price'] = scaled_prediction
                 print(form_data)
-                return render(request, 'pytorch/prediction_result.html', {
+                return render(request, 'pages/housepriceprediction/prediction_result.html', {
                     'form': form,
                     'result': form_data,
                     'prediction_made': True
@@ -115,14 +105,14 @@ def house_prediction(request):
     else:
         form = HouseDataForm()
     
-    return render(request, 'pytorch/house_prediction.html', {'form': form})
+    return render(request, 'pages/housepriceprediction/house_prediction.html', {'form': form})
 
 def prediction_result(request, pk):
     """
     View for displaying prediction results
     """
     prediction = HousePrediction.objects.get(pk=pk)
-    return render(request, 'pytorch/prediction_result.html', {
+    return render(request, 'pages/housepriceprediction/prediction_result.html', {
         'prediction': prediction,
         'title': 'Prediction Result'
     })

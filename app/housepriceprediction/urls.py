@@ -1,10 +1,9 @@
 from django.urls import path
 from . import views
 
-app_name = 'pytorch'
+app_name = 'housepriceprediction'
 
 urlpatterns = [
-    path('', views.index, name='index'),
-    path('house-prediction/', views.house_prediction, name='house_prediction'),
+    path('house-price-prediction/', views.index, name='index'),
     path('prediction-result/<int:pk>/', views.prediction_result, name='prediction_result'),
 ] 

@@ -3,5 +3,6 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('pytorch/', include('app.pytorch.urls')),
+    path('iris/', include('app.iris.urls')),
+    path('house-price-prediction/', include('app.housepriceprediction.urls')),
 ] 
