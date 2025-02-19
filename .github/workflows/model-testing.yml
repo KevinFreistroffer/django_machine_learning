@@ -41,7 +41,7 @@ jobs:
         
     - name: Run model tests
       run: |
-        python -m pytest pytorch/neural_networks/iris_dataset/tests/ --cov=pytorch/neural_networks/iris_dataset/ --cov-report=xml
+        PYTHONPATH=$PYTHONPATH:$(pwd) python -m pytest pytorch/neural_networks/iris_dataset/tests/ --cov=pytorch/neural_networks/iris_dataset/ --cov-report=xml
         
     - name: Validate model metrics
       run: |

@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from ..check_drift import check_model_drift
+from pytorch.neural_networks.iris_dataset.check_drift import check_model_drift
 from sklearn.metrics import confusion_matrix
 import os
 import json
