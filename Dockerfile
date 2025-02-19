@@ -5,7 +5,7 @@ FROM python:3.10-slim
 WORKDIR /app
 
 # Copy and install Python requirements first (for better caching)
-COPY /app/requirements.txt .
+COPY requirements.txt .
 
 RUN pip install -r requirements.txt
 

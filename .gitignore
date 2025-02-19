@@ -39,3 +39,10 @@ venv/
 .kube/              # Local Kubernetes config directory
 *.kubeconfig        # Kubernetes config files
 k8s/**/*.tmp        # Any temporary files in k8s directory
+
+# Model files
+*.pt
+*.ckpt
+pytorch/neural_networks/iris_dataset/data/test_dataset.pt
+pytorch/neural_networks/iris_dataset/checkpoints/*
+!pytorch/neural_networks/iris_dataset/checkpoints/.gitkeep
