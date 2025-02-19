@@ -5,9 +5,11 @@ FROM python:3.10-slim
 WORKDIR /app
 
 # Copy and install Python requirements first (for better caching)
-COPY requirements.txt .
+COPY app/requirements.txt app/requirements.txt
+COPY pytorch/requirements.txt pytorch/requirements.txt
 
-RUN pip install -r requirements.txt
+RUN pip install -r app/requirements.txt && \
+    pip install -r pytorch/requirements.txt
 
 # Copy the rest of your app code
 COPY . .
