@@ -2,20 +2,26 @@
 # Exit on error
 set -o errexit
 
+echo "Building..."
+
 # Debug: Print current directory
 pwd
 ls
 ls -la
 
+echo "Changing directory..."
 cd django_machine_learning/app
 ls
 
+echo "Freezing requirements..."
 pip freeze > requirements.txt
+
+echo "Installing requirements..."
 # Modify this line as needed for your package manager (pip, poetry, etc.)
 pip install -r requirements.txt
 
-# Convert static asset files
+echo "Collecting static assets..."
 python manage.py collectstatic --no-input
 
-# Apply any outstanding database migrations
+echo "Applying database migrations..."
 python manage.py migrate
