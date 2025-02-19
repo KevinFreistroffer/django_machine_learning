@@ -10,7 +10,7 @@ ls
 ls -la
 
 echo "Changing directory..."
-cd django_machine_learning/app
+cd app
 ls
 
 echo "Freezing requirements..."
