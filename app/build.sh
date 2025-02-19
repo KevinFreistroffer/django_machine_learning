@@ -13,6 +13,12 @@ echo "Changing directory..."
 cd app
 ls
 
+echo "Creating virtual environment..."
+python -m venv venv
+
+echo "Activating virtual environment..."
+source venv/bin/activate
+
 echo "Freezing requirements..."
 pip freeze > requirements.txt
 
