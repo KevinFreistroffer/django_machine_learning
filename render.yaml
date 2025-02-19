@@ -9,7 +9,7 @@ services:
     plan: free
     name: configs
     runtime: python
-    buildCommand: "bash ./app/build.sh"
+    buildCommand: "bash build.sh"
     startCommand: "python -m gunicorn django_machine_learning.app.asgi:application -k uvicorn.workers.UvicornWorker"
     envVars:
       - key: DATABASE_URL
