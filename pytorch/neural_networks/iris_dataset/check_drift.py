@@ -4,7 +4,7 @@ from sklearn.metrics import confusion_matrix
 import json
 import os
 import torch
-from nn_lightning import IrisClassifier
+from pytorch.neural_networks.iris_dataset.nn_lightning import IrisClassifier
 
 def check_model_drift():
     # Load historical predictions

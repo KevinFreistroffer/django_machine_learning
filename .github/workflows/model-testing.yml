@@ -28,12 +28,22 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r pytorch/requirements.txt
-        pip install pytest pytest-cov scikit-learn
+        pip install pytest pytest-cov scikit-learn pytorch-lightning torch
         
     - name: Create directories
       run: |
         mkdir -p pytorch/neural_networks/iris_dataset/data
         mkdir -p pytorch/neural_networks/iris_dataset/checkpoints
+        
+    # Create a dummy model checkpoint for testing
+    - name: Create test model
+      run: |
+        python -c "
+        from pytorch.neural_networks.iris_dataset.nn_lightning import IrisClassifier
+        import torch
+        model = IrisClassifier()
+        torch.save({'state_dict': model.state_dict()}, 'pytorch/neural_networks/iris_dataset/checkpoints/model.ckpt')
+        "
         
     - name: Generate test datasets
       run: |

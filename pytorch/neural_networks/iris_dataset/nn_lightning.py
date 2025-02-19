@@ -8,6 +8,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 import multiprocessing
 import numpy as np
+import torch.nn.functional as F
 
 # Load the Iris dataset
 data = load_iris()
@@ -72,6 +73,28 @@ X_train = torch.tensor(X_train, dtype=torch.float32)
 y_train = torch.tensor(y_train, dtype=torch.long)
 X_test = torch.tensor(X_test, dtype=torch.float32)
 y_test = torch.tensor(y_test, dtype=torch.long)
+
+class IrisClassifier(pl.LightningModule):
+    def __init__(self):
+        super().__init__()
+        self.layer1 = nn.Linear(4, 64)
+        self.layer2 = nn.Linear(64, 32)
+        self.layer3 = nn.Linear(32, 3)
+        
+    def forward(self, x):
+        x = F.relu(self.layer1(x))
+        x = F.relu(self.layer2(x))
+        x = self.layer3(x)
+        return x
+        
+    def training_step(self, batch, batch_idx):
+        x, y = batch
+        logits = self(x)
+        loss = F.cross_entropy(logits, y)
+        return loss
+        
+    def configure_optimizers(self):
+        return torch.optim.Adam(self.parameters(), lr=0.001)
 
 class IrisNN(pl.LightningModule):
     def __init__(self):
