@@ -39,10 +39,15 @@ jobs:
     - name: Create test model
       run: |
         python -c "
+        import pytorch_lightning as pl
         from pytorch.neural_networks.iris_dataset.nn_lightning import IrisClassifier
         import torch
+        
+        # Create and save model with proper Lightning format
         model = IrisClassifier()
-        torch.save({'state_dict': model.state_dict()}, 'pytorch/neural_networks/iris_dataset/checkpoints/model.ckpt')
+        trainer = pl.Trainer()
+        trainer.strategy.connect(model)
+        trainer.save_checkpoint('pytorch/neural_networks/iris_dataset/checkpoints/model.ckpt')
         "
         
     - name: Generate test datasets

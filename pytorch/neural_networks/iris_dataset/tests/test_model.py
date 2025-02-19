@@ -13,7 +13,15 @@ def test_data():
 @pytest.fixture
 def model():
     model_path = os.path.join(os.path.dirname(__file__), '../checkpoints/model.ckpt')
-    return IrisClassifier.load_from_checkpoint(model_path)
+    try:
+        # Try loading as Lightning checkpoint
+        return IrisClassifier.load_from_checkpoint(model_path)
+    except Exception:
+        # Fallback to loading as regular PyTorch checkpoint
+        model = IrisClassifier()
+        checkpoint = torch.load(model_path)
+        model.load_state_dict(checkpoint['state_dict'])
+        return model
 
 def test_model_output_shape(model, test_data):
     """Test if model outputs correct shape"""

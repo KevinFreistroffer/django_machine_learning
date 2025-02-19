@@ -18,7 +18,16 @@ def check_model_drift():
     test_data = torch.load(data_path)
     
     model_path = os.path.join(os.path.dirname(__file__), 'checkpoints/model.ckpt')
-    model = IrisClassifier.load_from_checkpoint(model_path)
+    
+    try:
+        # Try loading as Lightning checkpoint
+        model = IrisClassifier.load_from_checkpoint(model_path)
+    except Exception:
+        # Fallback to loading as regular PyTorch checkpoint
+        model = IrisClassifier()
+        checkpoint = torch.load(model_path)
+        model.load_state_dict(checkpoint['state_dict'])
+    
     model.eval()
     
     with torch.no_grad():
