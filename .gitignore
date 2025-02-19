@@ -34,3 +34,8 @@ coverage/
 Thumbs.db
 
 venv/
+
+# Kubernetes
+.kube/
+*.kubeconfig
+k8s/**/*.tmp
