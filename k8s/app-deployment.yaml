@@ -1,31 +1,41 @@
+# A Deployment makes sure your app is running and manages how it runs
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  # The name of your app - like a nametag for identification
   name: ml-app
   labels:
     app: ml-app
 spec:
+  # How many copies of your app should run at the same time
   replicas: 2
+  # This tells Kubernetes which pods (containers) to manage
   selector:
     matchLabels:
       app: ml-app
+  # The template for creating new pods
   template:
     metadata:
       labels:
         app: ml-app
     spec:
       containers:
+      # Details about the container that will run your app
       - name: ml-app
-        image: your-registry/ml-app:latest
+        # Where to find your Docker image
+        image: myregistry.azurecr.io/ml-app:latest
         ports:
-        - containerPort: 8000
+        # The port your app listens on
+        - containerPort: 8000   # This is your Django app's port inside the container
         env:
+        # Environment variables your app needs
         - name: DJANGO_SETTINGS_MODULE
           value: "configs.settings"
+        # Resource limits to prevent your app from using too much memory/CPU
         resources:
           requests:
-            memory: "512Mi"
-            cpu: "250m"
+            memory: "512Mi"  # Minimum memory needed
+            cpu: "250m"      # Minimum CPU needed (1/4 of a CPU core)
           limits:
-            memory: "1Gi"
-            cpu: "500m" 
+            memory: "1Gi"    # Maximum memory allowed
+            cpu: "500m"      # Maximum CPU allowed (1/2 of a CPU core)

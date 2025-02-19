@@ -1,7 +1,10 @@
+# ConfigMap stores settings that can be changed without rebuilding your app
 apiVersion: v1
 kind: ConfigMap
 metadata:
+  # Name of the config - like a settings file
   name: ml-app-config
 data:
-  DEBUG: "False"
-  ALLOWED_HOSTS: "*" 
+  # Your app's configuration settings
+  DEBUG: "False"        # Disable debug mode for production
+  ALLOWED_HOSTS: "*"    # Which hostnames can access your app 
