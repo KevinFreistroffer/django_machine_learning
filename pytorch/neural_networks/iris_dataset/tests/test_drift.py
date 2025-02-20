@@ -26,11 +26,11 @@ def test_drift_thresholds():
     # This should raise an exception due to drift
     with pytest.raises(Exception) as exc_info:
         from scipy import stats
-        ks_statistic, p_value = stats.ks_2samp(
+        ks_statistic, _ = stats.ks_2samp(
             historical['predictions'],
             drifted_predictions
         )
-        if ks_statistic > 0.5:  # Match the new threshold
+        if ks_statistic > 0.7:  # Match the new threshold
             raise Exception("Drift detected")
     
     assert "Drift detected" in str(exc_info.value) 

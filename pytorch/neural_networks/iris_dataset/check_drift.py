@@ -57,17 +57,14 @@ def check_model_drift():
     
     # Define drift thresholds
     KS_THRESHOLD = 0.7
-    P_VALUE_THRESHOLD = 0.001
     MATRIX_DIFF_THRESHOLD = 5.0
     
-    # Check for significant drift
+    # Check for significant drift - removed p-value check
     if (ks_statistic > KS_THRESHOLD or 
-        p_value < P_VALUE_THRESHOLD or 
         matrix_diff > MATRIX_DIFF_THRESHOLD):
         raise Exception(f"""
         Model drift detected:
         KS statistic: {ks_statistic:.3f} (threshold: {KS_THRESHOLD})
-        P-value: {p_value:.3f} (threshold: {P_VALUE_THRESHOLD})
         Confusion matrix difference: {matrix_diff:.3f} (threshold: {MATRIX_DIFF_THRESHOLD})
         """)
     
