@@ -18,4 +18,4 @@ COPY . .
 EXPOSE 8000
 
 # The command to start your app
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"] 
+CMD ["python", "app/manage.py", "runserver", "0.0.0.0:8000"] 

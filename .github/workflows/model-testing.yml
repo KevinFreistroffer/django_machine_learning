@@ -42,9 +42,20 @@ jobs:
         import pytorch_lightning as pl
         from pytorch.neural_networks.iris_dataset.nn_lightning import IrisClassifier
         import torch
+        import torch.nn.init as init
         
-        # Create and save model with proper Lightning format
+        # Create model with proper initialization
         model = IrisClassifier()
+        
+        # Initialize weights properly
+        def init_weights(m):
+            if isinstance(m, torch.nn.Linear):
+                init.xavier_normal_(m.weight)
+                init.zeros_(m.bias)
+        
+        model.apply(init_weights)
+        
+        # Save with proper Lightning format
         trainer = pl.Trainer()
         trainer.strategy.connect(model)
         trainer.save_checkpoint('pytorch/neural_networks/iris_dataset/checkpoints/model.ckpt')

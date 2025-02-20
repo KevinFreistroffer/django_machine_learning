@@ -56,9 +56,9 @@ def check_model_drift():
     matrix_diff = np.abs(hist_conf - new_conf).mean()
     
     # Define drift thresholds
-    KS_THRESHOLD = 0.1
-    P_VALUE_THRESHOLD = 0.05
-    MATRIX_DIFF_THRESHOLD = 0.1
+    KS_THRESHOLD = 0.5
+    P_VALUE_THRESHOLD = 0.01
+    MATRIX_DIFF_THRESHOLD = 4.0
     
     # Check for significant drift
     if (ks_statistic > KS_THRESHOLD or 

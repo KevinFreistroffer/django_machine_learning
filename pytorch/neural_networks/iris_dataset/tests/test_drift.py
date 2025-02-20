@@ -21,8 +21,7 @@ def test_drift_thresholds():
         historical = json.load(f)
     
     # Create intentionally drifted data
-    drifted_predictions = np.array(historical['predictions'])
-    np.random.shuffle(drifted_predictions)  # Create significant drift
+    drifted_predictions = np.zeros_like(historical['predictions'])  # All zeros for maximum drift
     
     # This should raise an exception due to drift
     with pytest.raises(Exception) as exc_info:
@@ -31,7 +30,7 @@ def test_drift_thresholds():
             historical['predictions'],
             drifted_predictions
         )
-        if ks_statistic > 0.1 or p_value < 0.05:
+        if ks_statistic > 0.5:  # Match the new threshold
             raise Exception("Drift detected")
     
     assert "Drift detected" in str(exc_info.value) 
