@@ -81,14 +81,30 @@ y_test = torch.tensor(y_test, dtype=torch.long)
 class IrisClassifier(pl.LightningModule):
     def __init__(self):
         super().__init__()
-        self.layer1 = nn.Linear(4, 64)
-        self.layer2 = nn.Linear(64, 32)
-        self.layer3 = nn.Linear(32, 3)
+        # Match the architecture from IrisNN
+        self.fc1 = nn.Linear(4, 64)
+        self.bn1 = nn.BatchNorm1d(64)
+        
+        self.fc2 = nn.Linear(64, 32)
+        self.bn2 = nn.BatchNorm1d(32)
+        
+        self.fc3 = nn.Linear(32, 3)
+        
+        self.relu = nn.LeakyReLU(0.1)
+        self.dropout = nn.Dropout(0.2)
         
     def forward(self, x):
-        x = F.relu(self.layer1(x))
-        x = F.relu(self.layer2(x))
-        x = self.layer3(x)
+        x = self.fc1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+        x = self.dropout(x)
+        
+        x = self.fc2(x)
+        x = self.bn2(x)
+        x = self.relu(x)
+        x = self.dropout(x)
+        
+        x = self.fc3(x)
         return x
         
     def training_step(self, batch, batch_idx):
