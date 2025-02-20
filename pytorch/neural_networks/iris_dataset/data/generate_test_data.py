@@ -26,7 +26,15 @@ def generate_test_datasets():
     }, 'pytorch/neural_networks/iris_dataset/data/test_dataset.pt')
     
     # Generate sample historical predictions for drift testing
-    sample_predictions = np.random.choice(3, size=len(y_test), p=[0.3, 0.3, 0.4])
+    # Using more balanced probabilities that better reflect typical Iris classification
+    sample_predictions = np.random.choice(3, size=len(y_test), p=[0.33, 0.33, 0.34])
+    
+    # Make predictions more aligned with actual labels to reduce drift
+    for i in range(len(sample_predictions)):
+        # 90% chance to predict the correct label
+        if np.random.random() < 0.9:
+            sample_predictions[i] = y_test[i]
+            
     conf_matrix = confusion_matrix(y_test, sample_predictions).tolist()
     
     historical_data = {
