@@ -1,6 +1,7 @@
 import torch
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
-from pytorch.neural_networks.iris_dataset.nn_lightning import IrisClassifier
+# from pytorch.neural_networks.iris_dataset.nn_lightning import IrisClassifier
+from iris_dataset.nn_lightning import IrisClassifier
 from torch.utils.data import TensorDataset, DataLoader
 import numpy as np
 import os
