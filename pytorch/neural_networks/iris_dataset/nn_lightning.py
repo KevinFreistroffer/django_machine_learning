@@ -9,6 +9,7 @@ from sklearn.preprocessing import StandardScaler
 import multiprocessing
 import numpy as np
 import torch.nn.functional as F
+from .config import LEARNING_RATE, MODEL_PATH, SCALER_PATH
 
 # Load the Iris dataset
 data = load_iris()
@@ -29,6 +30,9 @@ print("-" * 50)
 
 # After loading and before scaling the data
 def augment_data(X, y, noise_factor=0.05, n_synthetic=3):
+    # This function makes our dataset bigger and more diverse by:
+    # 1. Adding small random changes to existing flower measurements
+    # 2. Creating new samples by mixing measurements from similar flowers
     X_augmented = [X]
     y_augmented = [y]
     
@@ -91,40 +95,46 @@ class IrisClassifier(pl.LightningModule):
         x, y = batch
         logits = self(x)
         loss = F.cross_entropy(logits, y)
+        self.log('train_loss', loss)
         return loss
+    
+    def validation_step(self, batch, batch_idx):
+        x, y = batch
+        logits = self(x)
+        loss = F.cross_entropy(logits, y)
+        preds = torch.argmax(logits, dim=1)
+        acc = (preds == y).float().mean()
+        self.log('val_loss', loss)
+        self.log('val_acc', acc)
         
     def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=0.001)
+        return torch.optim.Adam(self.parameters(), lr=LEARNING_RATE)
 
 class IrisNN(pl.LightningModule):
     def __init__(self):
         super(IrisNN, self).__init__()
-        # Think of this network like a chain of smart filters
-        # Each filter (layer) learns to recognize different patterns in the flower measurements
-        
-        # First layer: Takes in 4 measurements and processes them into 64 different ways of looking at the data
+        # Our network is like a flower expert that learns to identify iris types
+        # It looks at 4 measurements (length/width of petals and sepals)
         self.fc1 = nn.Linear(4, 64)  
-        # Normalizes the data to make it easier for the network to learn (like standardizing test scores)
+        # Helps keep all measurements on a similar scale, like using the same ruler
         self.bn1 = nn.BatchNorm1d(64)
         
-        # Second layer: Combines the 64 patterns into 32 more complex patterns
+        # Takes the first analysis and refines it further
         self.fc2 = nn.Linear(64, 32)
         self.bn2 = nn.BatchNorm1d(32)
         
-        # Final layer: Makes the actual decision - which of the 3 iris types it thinks it is
+        # Makes the final decision: which of the 3 iris types it sees
         self.fc3 = nn.Linear(32, 3)
         
-        # LeakyReLU: Like a smart on/off switch that lets a little information through even when "off"
+        # Helps the network learn subtle patterns
         self.relu = nn.LeakyReLU(0.1)
-        # Dropout: Randomly turns off some neurons during training (like studying with different study materials)
+        # Randomly ignores some information during training to prevent memorization
         self.dropout = nn.Dropout(0.2)
 
-        # Initialize the network's weights (like setting up the starting point for learning)
         self._init_weights()
 
     def _init_weights(self):
-        # This sets up the initial weights in a smart way
-        # Think of it like giving the network a good starting point instead of random guesses
+        # Gives the network a smart starting point instead of random guesses
         for m in self.modules():
             if isinstance(m, nn.Linear):
                 nn.init.kaiming_normal_(m.weight, mode='fan_in', nonlinearity='leaky_relu')
@@ -142,6 +152,8 @@ class IrisNN(pl.LightningModule):
         return x
 
     def training_step(self, batch, batch_idx):
+        # This is where the network learns from each batch of flowers
+        # It makes predictions and adjusts itself when it makes mistakes
         X, y = batch
         logits = self(X)
         loss = nn.CrossEntropyLoss()(logits, y)
@@ -156,6 +168,8 @@ class IrisNN(pl.LightningModule):
         return loss
 
     def validation_step(self, batch, batch_idx):
+        # Tests how well the network does on flowers it hasn't seen during training
+        # Helps us know if it's actually learning or just memorizing
         X, y = batch
         logits = self(X)
         loss = nn.CrossEntropyLoss()(logits, y)
@@ -174,11 +188,12 @@ class IrisNN(pl.LightningModule):
         return loss
 
     def _f1_score(self, preds, targets, eps=1e-8):
-        # F1 score helps us know if we're good at identifying all types of flowers
-        # It's like making sure we're not just good at spotting one type while missing others
-        tp = torch.zeros(3).to(preds.device)  # Correct predictions for each flower type
-        fp = torch.zeros(3).to(preds.device)  # Wrong predictions (said it was this type when it wasn't)
-        fn = torch.zeros(3).to(preds.device)  # Missed predictions (didn't catch this type when it was)
+        # Gives us a balanced score of how well we're doing
+        # Makes sure we're good at identifying all types of irises, not just some
+        # For each type of flower, we count:
+        tp = torch.zeros(3).to(preds.device)  # When we said "it's this flower" and we were right!
+        fp = torch.zeros(3).to(preds.device)  # Oops! We said "it's this flower" but we were wrong
+        fn = torch.zeros(3).to(preds.device)  # We missed this flower when we should have found it
         
         for i in range(3):
             tp[i] = ((preds == i) & (targets == i)).sum()
@@ -191,7 +206,9 @@ class IrisNN(pl.LightningModule):
         return f1.mean()
 
     def configure_optimizers(self):
-        # Set up the learning process
+        # Sets up how the network learns:
+        # - How big steps it takes when learning
+        # - How it adjusts its learning speed over time
         self.optimizer = torch.optim.AdamW(
             self.parameters(),
             lr=0.001,
@@ -220,6 +237,11 @@ class IrisNN(pl.LightningModule):
         return [self.optimizer], [scheduler]
 
 def main():
+    # The main training program:
+    # 1. Organizes the flower data into batches
+    # 2. Creates and trains the network
+    # 3. Saves the trained network
+    # 4. Tests it on some example flowers
     # Create data loaders
     train_dataset = torch.utils.data.TensorDataset(X_train, y_train)
     train_loader = torch.utils.data.DataLoader(
@@ -268,8 +290,8 @@ def main():
     trainer.fit(model, train_loader, test_loader)
 
     # Save the model and scaler
-    trainer.save_checkpoint("models/iris_model.ckpt")
-    np.save("models/iris_scaler.npy", {
+    trainer.save_checkpoint(MODEL_PATH)
+    np.save(SCALER_PATH, {
         'scaler_mean': scaler.mean_,
         'scaler_scale': scaler.scale_
     })
@@ -287,5 +309,8 @@ def main():
             print(f"True: {data.target_names[y_test[i]]}, Predicted: {data.target_names[pred_classes[i]]}")
 
 if __name__ == '__main__':
+    # On Windows, this line prevents the program from getting stuck in an infinite loop
+    # when using multiple processes. It's like telling all the worker processes "hey, you're
+    # helpers, not the boss!" so they don't try to run the main program again and again.
     multiprocessing.freeze_support()
     main()

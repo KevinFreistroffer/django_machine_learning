@@ -4,6 +4,7 @@ import numpy as np
 import json
 import torch
 from sklearn.metrics import confusion_matrix
+from datetime import datetime
 
 def generate_test_datasets():
     # Load iris dataset
@@ -41,7 +42,7 @@ def generate_test_datasets():
         'predictions': sample_predictions.tolist(),
         'confusion_matrix': conf_matrix,
         'metadata': {
-            'timestamp': '2024-01-01',
+            'timestamp': datetime.now().strftime('%Y-%m-%d'),
             'model_version': '1.0.0',
             'dataset_size': len(y_test)
         }

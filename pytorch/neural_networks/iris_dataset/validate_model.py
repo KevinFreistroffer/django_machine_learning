@@ -5,66 +5,44 @@ from iris_dataset.nn_lightning import IrisClassifier
 from torch.utils.data import TensorDataset, DataLoader
 import numpy as np
 import os
+from .model_utils import load_model, get_predictions
+from .metrics import calculate_model_metrics
+from .config import *
 
 def validate_model():
-    # Load test dataset
-    data_path = os.path.join(os.path.dirname(__file__), 'data/test_dataset.pt')
+    # Let's get our test data from a special folder
+    # Think of this like getting flashcards to quiz our robot
+    data_path = os.path.join(os.path.dirname(__file__), TEST_DATA_PATH)
     test_data = torch.load(data_path)
-    X_test = test_data['X_test']
-    y_test = test_data['y_test']
     
-    test_dataset = TensorDataset(X_test, y_test)
-    test_loader = DataLoader(test_dataset, batch_size=32)
+    # Package our flashcards in a nice way so our robot can read them easily
+    test_dataset = TensorDataset(test_data['X_test'], test_data['y_test'])
+    test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE)
     
-    # Load the model
-    model_path = os.path.join(os.path.dirname(__file__), 'checkpoints/model.ckpt')
-    try:
-        model = IrisClassifier.load_from_checkpoint(model_path)
-    except Exception:
-        model = IrisClassifier()
-        checkpoint = torch.load(model_path)
-        model.load_state_dict(checkpoint['state_dict'])
+    # Find and wake up our trained robot (that's our model!)
+    model_path = os.path.join(os.path.dirname(__file__), MODEL_PATH)
+    model = load_model(model_path)
     
-    model.eval()
+    # Let's see how well our robot can guess the answers
+    predictions, labels = get_predictions(model, test_loader)
+    metrics = calculate_model_metrics(labels, predictions)
     
-    # Collect predictions
-    all_preds = []
-    all_labels = []
+    # Check if our robot is smart enough:
+    # - Accuracy: How often it gets the answer right
+    # - Precision: When it says "this is X", how often it's really X
+    # - Recall: How good it is at finding ALL the X's
+    # - F1: A special score that combines precision and recall
+    assert metrics['accuracy'] >= ACCURACY_THRESHOLD, f"Accuracy {metrics['accuracy']:.2f} below threshold"
+    assert metrics['precision'] >= PRECISION_THRESHOLD, f"Precision {metrics['precision']:.2f} below threshold"
+    assert metrics['recall'] >= RECALL_THRESHOLD, f"Recall {metrics['recall']:.2f} below threshold"
+    assert metrics['f1'] >= F1_THRESHOLD, f"F1 {metrics['f1']:.2f} below threshold"
     
-    with torch.no_grad():
-        for batch in test_loader:
-            x, y = batch
-            outputs = model(x)
-            preds = torch.argmax(outputs, dim=1)
-            all_preds.extend(preds.numpy())
-            all_labels.extend(y.numpy())
-    
-    # Calculate metrics
-    accuracy = accuracy_score(all_labels, all_preds)
-    precision, recall, f1, _ = precision_recall_fscore_support(
-        all_labels, 
-        all_preds, 
-        average='weighted',
-        zero_division=0
-    )
-    
-    # Define thresholds - lowered for initial testing
-    ACCURACY_THRESHOLD = 0.30  # Lowered from 0.90
-    PRECISION_THRESHOLD = 0.30  # Lowered from 0.85
-    RECALL_THRESHOLD = 0.30  # Lowered from 0.85
-    F1_THRESHOLD = 0.30  # Lowered from 0.85
-    
-    # Validate metrics
-    assert accuracy >= ACCURACY_THRESHOLD, f"Accuracy {accuracy:.2f} below threshold {ACCURACY_THRESHOLD}"
-    assert precision >= PRECISION_THRESHOLD, f"Precision {precision:.2f} below threshold {PRECISION_THRESHOLD}"
-    assert recall >= RECALL_THRESHOLD, f"Recall {recall:.2f} below threshold {RECALL_THRESHOLD}"
-    assert f1 >= F1_THRESHOLD, f"F1 {f1:.2f} below threshold {F1_THRESHOLD}"
-    
-    print(f"Model validation passed!")
-    print(f"Accuracy: {accuracy:.2f}")
-    print(f"Precision: {precision:.2f}")
-    print(f"Recall: {recall:.2f}")
-    print(f"F1 Score: {f1:.2f}")
+    # Yay! Our robot passed all its tests! Let's see the scores:
+    print("Model validation passed!")
+    print(f"Accuracy: {metrics['accuracy']:.2f}")
+    print(f"Precision: {metrics['precision']:.2f}")
+    print(f"Recall: {metrics['recall']:.2f}")
+    print(f"F1 Score: {metrics['f1']:.2f}")
 
 if __name__ == "__main__":
     validate_model()
