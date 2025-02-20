@@ -23,7 +23,7 @@ def generate_test_datasets():
     torch.save({
         'X_test': X_test_tensor,
         'y_test': y_test_tensor
-    }, 'pytorch/neural_networks/iris_dataset/data/test_dataset.pt')
+    }, 'test_dataset.pt')
     
     # Generate sample historical predictions for drift testing
     sample_predictions = np.random.choice(3, size=len(y_test), p=[0.3, 0.3, 0.4])
@@ -40,7 +40,7 @@ def generate_test_datasets():
     }
     
     # Save historical predictions
-    with open('pytorch/neural_networks/iris_dataset/data/historical_predictions.json', 'w') as f:
+    with open('historical_predictions.json', 'w') as f:
         json.dump(historical_data, f, indent=2)
 
 if __name__ == "__main__":
