@@ -51,7 +51,7 @@ def wine_quality_view(request):
     # Get recent predictions
     predictions = WineQuality.objects.order_by('-created_at')[:10]
     
-    return render(request, 'wine_quality/wine_quality.html', {
+    return render(request, 'pages/wine_quality/wine_quality.html', {
         'form': form,
         'predictions': predictions
     })

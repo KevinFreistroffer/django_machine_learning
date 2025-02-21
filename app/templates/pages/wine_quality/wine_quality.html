@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Wine Quality Predictor</h2>
+    <p>Enter wine characteristics to predict its quality (score from 3-9)</p>
+
+    <div class="row">
+        <!-- Prediction Form -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Enter Wine Details</h5>
+                    <form method="post">
+                        {% csrf_token %}
+                        {% for field in form %}
+                        <div class="mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label">
+                                {{ field.label }}
+                            </label>
+                            {{ field }}
+                        </div>
+                        {% endfor %}
+                        <button type="submit" class="btn btn-primary">Predict Quality</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Predictions -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Recent Predictions</h5>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Predicted</th>
+                                    <th>Actual</th>
+                                    <th>Confidence</th>
+                                    <th>Error</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for pred in predictions %}
+                                <tr>
+                                    <td>{{ pred.predicted_quality|floatformat:1 }}</td>
+                                    <td>{{ pred.actual_quality|floatformat:1 }}</td>
+                                    <td>{{ pred.prediction_confidence|floatformat:2 }}</td>
+                                    <td>{{ pred.predicted_quality|subtract:pred.actual_quality|abs|floatformat:2 }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
