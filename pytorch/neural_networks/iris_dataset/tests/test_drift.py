@@ -6,7 +6,7 @@ import os
 import json
 import torch
 from scipy import stats
-from ..config import KS_THRESHOLD
+from ..config import KS_THRESHOLD, MATRIX_DIFF_THRESHOLD
 
 def test_drift_detection():
     """Test if drift detection works correctly"""
@@ -30,23 +30,33 @@ def test_drift_thresholds():
     for i in range(n_samples):
         drifted_predictions.append((i % 3))  # Cycle through 0,1,2
     
+    # Create drifted confusion matrix
+    drifted_conf_matrix = confusion_matrix(
+        historical['predictions'],
+        drifted_predictions
+    ).tolist()
+    
     # Calculate drift metrics
     ks_statistic, _ = stats.ks_2samp(
         historical['predictions'],
         drifted_predictions
     )
     
-    print(f"KS statistic: {ks_statistic}")  # For debugging
+    matrix_diff = np.abs(
+        np.array(historical['confusion_matrix']) - 
+        np.array(drifted_conf_matrix)
+    ).mean()
     
-    # Create a mock drift check function that will definitely raise an exception
-    def mock_drift_check():
-        if True:  # Always raise the exception
-            raise Exception(
-                f"Drift detected: KS statistic: {ks_statistic:.3f} (threshold: {KS_THRESHOLD})"
-            )
+    print(f"KS statistic: {ks_statistic}")
+    print(f"Matrix difference: {matrix_diff}")
     
-    # This should now definitely raise an exception
+    # This should raise an exception due to drift
     with pytest.raises(Exception) as exc_info:
-        mock_drift_check()
+        if ks_statistic > KS_THRESHOLD or matrix_diff > MATRIX_DIFF_THRESHOLD:
+            raise Exception(
+                f"Drift detected:\n"
+                f"KS statistic: {ks_statistic:.3f} (threshold: {KS_THRESHOLD})\n"
+                f"Matrix difference: {matrix_diff:.3f} (threshold: {MATRIX_DIFF_THRESHOLD})"
+            )
     
     assert "Drift detected" in str(exc_info.value) 

@@ -1,7 +1,5 @@
 import torch
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
-# from pytorch.neural_networks.iris_dataset.nn_lightning import IrisClassifier
-from iris_dataset.nn_lightning import IrisClassifier
 from torch.utils.data import TensorDataset, DataLoader
 import numpy as np
 import os
@@ -27,11 +25,7 @@ def validate_model():
     predictions, labels = get_predictions(model, test_loader)
     metrics = calculate_model_metrics(labels, predictions)
     
-    # Check if our robot is smart enough:
-    # - Accuracy: How often it gets the answer right
-    # - Precision: When it says "this is X", how often it's really X
-    # - Recall: How good it is at finding ALL the X's
-    # - F1: A special score that combines precision and recall
+    # Check if our robot is smart enough
     assert metrics['accuracy'] >= ACCURACY_THRESHOLD, f"Accuracy {metrics['accuracy']:.2f} below threshold"
     assert metrics['precision'] >= PRECISION_THRESHOLD, f"Precision {metrics['precision']:.2f} below threshold"
     assert metrics['recall'] >= RECALL_THRESHOLD, f"Recall {metrics['recall']:.2f} below threshold"
