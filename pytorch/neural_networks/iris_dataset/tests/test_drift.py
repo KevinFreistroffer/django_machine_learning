@@ -1,26 +1,21 @@
 import pytest
 import numpy as np
-from pytorch.neural_networks.iris_dataset.check_drift import check_model_drift
 from sklearn.metrics import confusion_matrix
-import os
 import json
-import torch
 from scipy import stats
 from ..config import KS_THRESHOLD, MATRIX_DIFF_THRESHOLD
 
-def test_drift_detection():
+def test_drift_detection(test_data_path, generate_test_data):
     """Test if drift detection works correctly"""
+    from ..check_drift import check_model_drift
     try:
         check_model_drift()
     except Exception as e:
         pytest.fail(f"Drift detection failed: {str(e)}")
 
-def test_drift_thresholds():
+def test_drift_thresholds(test_data_path, generate_test_data):
     """Test if drift thresholds are reasonable"""
-    # Load historical data
-    historical_path = os.path.join(os.path.dirname(__file__), '../data/historical_predictions.json')
-    with open(historical_path, 'r') as f:
-        historical = json.load(f)
+    historical = generate_test_data
     
     # Create intentionally drifted data
     n_samples = len(historical['predictions'])

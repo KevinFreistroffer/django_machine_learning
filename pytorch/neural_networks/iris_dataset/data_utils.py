@@ -4,7 +4,7 @@ from sklearn.preprocessing import StandardScaler
 import numpy as np
 import torch
 
-def load_and_preprocess_data():
+def load_and_preprocess_data(test_mode=False):
     """Gets flower data and makes it ready for our computer to learn from!
     Just like organizing toys before playtime."""
     iris = load_iris()
@@ -25,6 +25,9 @@ def load_and_preprocess_data():
     y_train = torch.LongTensor(y_train)
     X_test = torch.FloatTensor(X_test)
     y_test = torch.LongTensor(y_test)
+    
+    if test_mode:
+        return X_test, y_test  # Only return test data for tests
     
     return X_train, X_test, y_train, y_test, scaler
 
