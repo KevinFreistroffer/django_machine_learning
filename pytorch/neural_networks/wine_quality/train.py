@@ -13,7 +13,7 @@ if project_root not in sys.path:
     sys.path.append(project_root)
 
 from pytorch.neural_networks.wine_quality.nn_lightning import WineQualityRegressor
-from pytorch.neural_networks.wine_quality.data_utils import load_and_preprocess_data
+from pytorch.neural_networks.wine_quality.data_utils import load_and_preprocess_data, augment_data
 
 def train_model():
     """
@@ -27,8 +27,20 @@ def train_model():
     # Get our wine data ready
     X_train, X_test, y_train, y_test, scaler = load_and_preprocess_data()
     
-    # Package the data into batches (like organizing wine bottles into cases)
-    train_dataset = TensorDataset(X_train, y_train)
+    # Augment training data
+    X_train_aug, y_train_aug = augment_data(
+        X_train.numpy(), 
+        y_train.numpy(),
+        noise_factor=0.05,
+        n_synthetic=2
+    )
+    
+    # Convert augmented data to tensors
+    X_train_aug = torch.FloatTensor(X_train_aug)
+    y_train_aug = torch.FloatTensor(y_train_aug)
+    
+    # Use augmented data for training
+    train_dataset = TensorDataset(X_train_aug, y_train_aug)
     train_loader = DataLoader(
         train_dataset,
         batch_size=32,

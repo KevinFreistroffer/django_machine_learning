@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 import torch
 
-def load_and_preprocess_data(test_mode=False):
+def load_and_preprocess_data(test_mode=False, return_all=False):
     """
     This is like getting our wine collection ready for the robot to learn from!
     We:
@@ -29,6 +29,12 @@ def load_and_preprocess_data(test_mode=False):
     print(f"X shape: {X.shape}")
     print(f"X range: {X.min():.2f} to {X.max():.2f}")
     print(f"y range: {y.min():.2f} to {y.max():.2f}")
+    
+    if return_all:
+        # Scale all data
+        scaler = StandardScaler()
+        X = scaler.fit_transform(X)
+        return torch.FloatTensor(X), torch.FloatTensor(y)
     
     # Split our wines into practice and test bottles
     X_train, X_test, y_train, y_test = train_test_split(

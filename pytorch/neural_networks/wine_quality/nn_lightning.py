@@ -70,3 +70,21 @@ class WineQualityRegressor(pl.LightningModule):
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=0.001)
         return optimizer
+
+    def predict_with_uncertainty(self, x, n_samples=10):
+        """Make predictions with uncertainty estimates"""
+        self.train()  # Enable dropout for uncertainty estimation
+        predictions = []
+        
+        for _ in range(n_samples):
+            with torch.no_grad():
+                pred = self(x)
+                predictions.append(pred)
+        
+        # Calculate mean and std of predictions
+        predictions = torch.stack(predictions)
+        mean_pred = predictions.mean(dim=0)
+        std_pred = predictions.std(dim=0)
+        
+        self.eval()  # Back to evaluation mode
+        return mean_pred, std_pred
