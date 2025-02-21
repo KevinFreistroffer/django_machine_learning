@@ -4,6 +4,10 @@ All the important settings and rules are kept here so they're easy to find and c
 """
 
 import os
+from pathlib import Path
+
+# Get the project root directory
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
 # Get base directory - handle both test and production environments
 if 'PYTEST_CURRENT_TEST' in os.environ:
@@ -14,7 +18,7 @@ else:
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # File paths (like maps showing where to find everything)
-MODEL_PATH = os.path.join(BASE_DIR, 'models', 'wine_model_final.ckpt')
+MODEL_PATH = os.path.join(PROJECT_ROOT, 'pytorch', 'neural_networks', 'wine_quality', 'models', 'wine_model_final.ckpt')
 SCALER_PATH = os.path.join(BASE_DIR, 'models', 'wine_scaler.npy')
 TEST_DATA_PATH = os.path.join(BASE_DIR, 'data', 'test_dataset.pt')
 HISTORICAL_PREDICTIONS_PATH = os.path.join(BASE_DIR, 'data', 'historical_predictions.json')

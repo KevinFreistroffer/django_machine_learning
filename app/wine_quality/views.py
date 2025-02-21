@@ -3,6 +3,14 @@ from django.contrib import messages
 import torch
 import numpy as np
 from sklearn.preprocessing import StandardScaler
+import os
+import sys
+from pathlib import Path
+
+# Add project root to Python path
+project_root = str(Path(__file__).resolve().parents[2])
+if project_root not in sys.path:
+    sys.path.append(project_root)
 
 from .forms import WineQualityForm
 from .models import WineQuality
@@ -44,14 +52,14 @@ def wine_quality_view(request):
             
             wine.save()
             messages.success(request, 'Wine quality prediction made successfully!')
-            return redirect('wine_quality')
+            return redirect('wine_quality:predict')
     else:
         form = WineQualityForm()
     
     # Get recent predictions
     predictions = WineQuality.objects.order_by('-created_at')[:10]
     
-    return render(request, 'pages/wine_quality/wine_quality.html', {
+    return render(request, 'pages/wine_quality/predict.html', {
         'form': form,
         'predictions': predictions
     })

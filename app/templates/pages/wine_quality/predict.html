@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load wine_quality_extras %}
 
 {% block content %}
 <div class="container mt-5">
@@ -48,7 +49,7 @@
                                     <td>{{ pred.predicted_quality|floatformat:1 }}</td>
                                     <td>{{ pred.actual_quality|floatformat:1 }}</td>
                                     <td>{{ pred.prediction_confidence|floatformat:2 }}</td>
-                                    <td>{{ pred.predicted_quality|subtract:pred.actual_quality|abs|floatformat:2 }}</td>
+                                    <td>{{ pred.predicted_quality|subtract:pred.actual_quality|absolute|floatformat:2 }}</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>

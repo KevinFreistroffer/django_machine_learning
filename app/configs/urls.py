@@ -21,7 +21,7 @@ from . import views
 urlpatterns = [
     path('', views.home, name='home'),
     path('admin/', admin.site.urls),
-    path('iris/', include('iris.urls')),
     path('house-price-prediction/', include('housepriceprediction.urls')),
+    path('iris/', include('iris.urls')),
     path('wine-quality/', include('wine_quality.urls')),
 ]
