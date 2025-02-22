@@ -1,6 +1,6 @@
 import torch
 import os
-from .nn_lightning import IrisClassifier
+from .nn_lightning import IrisNN
 from torch.utils.data import DataLoader, TensorDataset
 from .config import BATCH_SIZE
 
@@ -11,10 +11,10 @@ def load_model(model_path):
     """
     try:
         # First, we try to open it like a fancy coloring book (Lightning style)
-        model = IrisClassifier.load_from_checkpoint(model_path)
+        model = IrisNN.load_from_checkpoint(model_path)
     except Exception:
         # Oops! If that doesn't work, we'll open it like a regular coloring book
-        model = IrisClassifier()
+        model = IrisNN()
         checkpoint = torch.load(model_path)
         model.load_state_dict(checkpoint['state_dict'])
     

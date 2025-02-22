@@ -4,7 +4,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 import numpy as np
 
-def load_and_preprocess_data(test_mode=False):
+def load_and_preprocess_data(test_mode=False, return_val=False):
     """Load and preprocess the Iris dataset"""
     # Load data
     iris = load_iris()
@@ -15,36 +15,37 @@ def load_and_preprocess_data(test_mode=False):
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
     
-    # Use stratified sampling and shuffle
+    if return_val:
+        # Split into train, validation, and test
+        X_train, X_temp, y_train, y_temp = train_test_split(
+            X_scaled, y, test_size=0.4, random_state=42, stratify=y
+        )
+        X_val, X_test, y_val, y_test = train_test_split(
+            X_temp, y_temp, test_size=0.5, random_state=42, stratify=y_temp
+        )
+        
+        # Convert to tensors
+        X_train = torch.FloatTensor(X_train)
+        X_val = torch.FloatTensor(X_val)
+        y_train = torch.LongTensor(y_train)
+        y_val = torch.LongTensor(y_val)
+        
+        return X_train, X_val, y_train, y_val
+    
+    # Original split for test mode
     X_train, X_test, y_train, y_test = train_test_split(
-        X_scaled, y, 
-        test_size=0.2, 
-        random_state=42,
-        stratify=y,
-        shuffle=True
+        X_scaled, y, test_size=0.2, random_state=42, stratify=y
     )
     
-    # Additional step to ensure similar distributions
-    # Randomly shuffle within each class to reduce drift
-    for class_label in np.unique(y):
-        train_mask = y_train == class_label
-        test_mask = y_test == class_label
-        
-        np.random.seed(42)  # For reproducibility
-        np.random.shuffle(X_train[train_mask])
-        np.random.shuffle(X_test[test_mask])
-    
     # Convert to tensors
-    X_train_tensor = torch.FloatTensor(X_train)
-    X_test_tensor = torch.FloatTensor(X_test)
-    y_train_tensor = torch.LongTensor(y_train)
-    y_test_tensor = torch.LongTensor(y_test)
+    X_train = torch.FloatTensor(X_train)
+    X_test = torch.FloatTensor(X_test)
+    y_train = torch.LongTensor(y_train)
+    y_test = torch.LongTensor(y_test)
     
-    # Return appropriate data based on mode
     if test_mode:
-        return X_test_tensor, y_test_tensor
-    else:
-        return X_train_tensor, y_train_tensor
+        return X_test, y_test
+    return X_train, y_train
 
 def print_sample_info(features, label, feature_names, target_names):
     """Shows us what one flower looks like in our data, like looking at
