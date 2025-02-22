@@ -26,8 +26,13 @@ echo "Installing requirements..."
 # Modify this line as needed for your package manager (pip, poetry, etc.)
 pip install -r requirements.txt
 
+echo "Creating staticfiles directory..."
+mkdir -p staticfiles
+
 echo "Collecting static assets..."
-python manage.py collectstatic --no-input
+python manage.py collectstatic --no-input --clear
 
 echo "Applying database migrations..."
 python manage.py migrate
+
+echo "Build completed."
