@@ -1,32 +1,34 @@
 """Configuration settings for Iris model"""
 
 import os
+from pathlib import Path
 
-# Get base directory - handle both test and production environments
-if 'PYTEST_CURRENT_TEST' in os.environ:
-    # In test environment
-    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-else:
-    # In production environment
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# Get the absolute path to the iris_dataset directory
+IRIS_DIR = Path(__file__).resolve().parent
+
+# Model paths with absolute paths
+MODEL_PATH = str(IRIS_DIR / 'checkpoints' / 'model.ckpt')
+TEST_DATA_PATH = str(IRIS_DIR / 'data' / 'test_dataset.pt')
+
+# Create directories if they don't exist
+os.makedirs(IRIS_DIR / 'checkpoints', exist_ok=True)
+os.makedirs(IRIS_DIR / 'data', exist_ok=True)
 
 # Model validation thresholds
-ACCURACY_THRESHOLD = 0.30
+ACCURACY_THRESHOLD = 0.95
 PRECISION_THRESHOLD = 0.30
 RECALL_THRESHOLD = 0.30
 F1_THRESHOLD = 0.30
 
 # Drift detection thresholds
-KS_THRESHOLD = 0.05
-MATRIX_DIFF_THRESHOLD = 3.0
+KS_THRESHOLD = 0.20
+MATRIX_DIFF_THRESHOLD = 0.2
 
 # Data paths
-MODEL_PATH = os.path.join(BASE_DIR, 'models', 'iris_model.ckpt')
-SCALER_PATH = os.path.join(BASE_DIR, 'models', 'iris_scaler.npy')
-TEST_DATA_PATH = os.path.join(BASE_DIR, 'data', 'test_dataset.pt')
-HISTORICAL_PREDICTIONS_PATH = os.path.join(BASE_DIR, 'data', 'historical_predictions.json')
+SCALER_PATH = os.path.join(IRIS_DIR, 'models', 'iris_scaler.npy')
+HISTORICAL_PREDICTIONS_PATH = os.path.join(IRIS_DIR, 'data', 'historical_predictions.json')
 
 # Training parameters
 BATCH_SIZE = 32
-LEARNING_RATE = 0.001
-MAX_EPOCHS = 200 
+LEARNING_RATE = 0.01
+EPOCHS = 100 

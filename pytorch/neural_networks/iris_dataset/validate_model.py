@@ -21,7 +21,7 @@ def validate_model():
     model = load_model(MODEL_PATH)
     
     # Get predictions
-    predictions, _ = get_predictions(model, X_test)
+    predictions, _ = get_predictions(model, X_test, y_test)
     
     # Calculate accuracy
     accuracy = (predictions == y_test).float().mean().item()

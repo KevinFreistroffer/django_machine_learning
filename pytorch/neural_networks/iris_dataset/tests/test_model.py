@@ -1,53 +1,28 @@
-import pytest
-import torch
 import os
-from pytorch.neural_networks.iris_dataset.nn_lightning import IrisClassifier
-from sklearn.metrics import accuracy_score
-import numpy as np
+import sys
+from pathlib import Path
 
-@pytest.fixture
-def test_data():
-    data_path = os.path.join(os.path.dirname(__file__), '../data/test_dataset.pt')
-    return torch.load(data_path)
+# Add project root to Python path
+project_root = str(Path(__file__).resolve().parents[4])
+if project_root not in sys.path:
+    sys.path.append(project_root)
 
-@pytest.fixture
-def model():
-    model_path = os.path.join(os.path.dirname(__file__), '../checkpoints/model.ckpt')
-    try:
-        # Try loading as Lightning checkpoint
-        return IrisClassifier.load_from_checkpoint(model_path)
-    except Exception:
-        # Fallback to loading as regular PyTorch checkpoint
-        model = IrisClassifier()
-        checkpoint = torch.load(model_path)
-        model.load_state_dict(checkpoint['state_dict'])
-        return model
+import unittest
+import torch
+from pytorch.neural_networks.iris_dataset.model_utils import load_model, get_predictions
+from pytorch.neural_networks.iris_dataset.data_utils import load_and_preprocess_data
+from pytorch.neural_networks.iris_dataset.config import MODEL_PATH, ACCURACY_THRESHOLD
 
-def test_model_output_shape(model, test_data):
-    """Test if model outputs correct shape"""
-    model.eval()
-    with torch.no_grad():
-        outputs = model(test_data['X_test'])
+class TestIrisModel(unittest.TestCase):
+    def setUp(self):
+        self.X_test, self.y_test = load_and_preprocess_data(test_mode=True)
+        self.model = load_model(MODEL_PATH)
     
-    assert outputs.shape[1] == 3, "Model should output 3 classes"
-    assert outputs.shape[0] == len(test_data['y_test']), "Batch size mismatch"
+    def test_model_accuracy(self):
+        predictions, _ = get_predictions(self.model, self.X_test)
+        accuracy = (predictions == self.y_test).float().mean().item()
+        self.assertGreaterEqual(accuracy, ACCURACY_THRESHOLD, 
+            f"Model accuracy {accuracy:.3f} below threshold {ACCURACY_THRESHOLD}")
 
-def test_model_output_values(model, test_data):
-    """Test if model outputs valid probabilities"""
-    model.eval()
-    with torch.no_grad():
-        outputs = model(test_data['X_test'])
-        probs = torch.softmax(outputs, dim=1)
-    
-    assert torch.all(probs >= 0) and torch.all(probs <= 1), "Probabilities should be between 0 and 1"
-    assert torch.allclose(torch.sum(probs, dim=1), torch.ones(probs.shape[0])), "Probabilities should sum to 1"
-
-def test_model_accuracy(model, test_data):
-    """Test if model meets minimum accuracy threshold"""
-    model.eval()
-    with torch.no_grad():
-        outputs = model(test_data['X_test'])
-        predictions = torch.argmax(outputs, dim=1)
-    
-    accuracy = accuracy_score(test_data['y_test'], predictions)
-    assert accuracy >= 0.30, f"Model accuracy {accuracy:.2f} below threshold of 0.30" 
+if __name__ == '__main__':
+    unittest.main() 

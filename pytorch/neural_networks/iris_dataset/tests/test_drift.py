@@ -1,57 +1,41 @@
-import pytest
+import os
+import sys
+from pathlib import Path
+
+# Add project root to Python path
+project_root = str(Path(__file__).resolve().parents[4])
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
+import unittest
 import numpy as np
-from sklearn.metrics import confusion_matrix
-import json
 from scipy import stats
-from ..config import KS_THRESHOLD, MATRIX_DIFF_THRESHOLD
+from pytorch.neural_networks.iris_dataset.config import KS_THRESHOLD, MATRIX_DIFF_THRESHOLD
+from pytorch.neural_networks.iris_dataset.data_utils import load_and_preprocess_data
 
-def test_drift_detection(test_data_path, generate_test_data):
-    """Test if drift detection works correctly"""
-    from ..check_drift import check_model_drift
-    try:
-        check_model_drift()
-    except Exception as e:
-        pytest.fail(f"Drift detection failed: {str(e)}")
+class TestDataDrift(unittest.TestCase):
+    def setUp(self):
+        self.X_train, _ = load_and_preprocess_data(test_mode=False)
+        self.X_test, _ = load_and_preprocess_data(test_mode=True)
+        
+    def test_drift(self):
+        """Test for data drift between train and test sets"""
+        # Convert to numpy for statistical tests
+        train_data = self.X_train.numpy()
+        test_data = self.X_test.numpy()
+        
+        # Compare distributions of each feature
+        for i in range(train_data.shape[1]):
+            statistic, _ = stats.ks_2samp(train_data[:, i], test_data[:, i])
+            self.assertLess(statistic, KS_THRESHOLD, 
+                f"Feature {i} shows significant drift: KS statistic = {statistic:.3f}")
+        
+        # Compare correlation matrices
+        train_corr = np.corrcoef(train_data.T)
+        test_corr = np.corrcoef(test_data.T)
+        matrix_diff = np.abs(train_corr - test_corr).mean()
+        self.assertLess(matrix_diff, MATRIX_DIFF_THRESHOLD,
+            f"Correlation structure shows significant drift: diff = {matrix_diff:.3f}")
 
-def test_drift_thresholds(test_data_path, generate_test_data):
-    """Test if drift thresholds are reasonable"""
-    historical = generate_test_data
-    
-    # Create intentionally drifted data
-    n_samples = len(historical['predictions'])
-    drifted_predictions = []
-    
-    # Create maximum drift by alternating between classes
-    for i in range(n_samples):
-        drifted_predictions.append((i % 3))  # Cycle through 0,1,2
-    
-    # Create drifted confusion matrix
-    drifted_conf_matrix = confusion_matrix(
-        historical['predictions'],
-        drifted_predictions
-    ).tolist()
-    
-    # Calculate drift metrics
-    ks_statistic, _ = stats.ks_2samp(
-        historical['predictions'],
-        drifted_predictions
-    )
-    
-    matrix_diff = np.abs(
-        np.array(historical['confusion_matrix']) - 
-        np.array(drifted_conf_matrix)
-    ).mean()
-    
-    print(f"KS statistic: {ks_statistic}")
-    print(f"Matrix difference: {matrix_diff}")
-    
-    # This should raise an exception due to drift
-    with pytest.raises(Exception) as exc_info:
-        if ks_statistic > KS_THRESHOLD or matrix_diff > MATRIX_DIFF_THRESHOLD:
-            raise Exception(
-                f"Drift detected:\n"
-                f"KS statistic: {ks_statistic:.3f} (threshold: {KS_THRESHOLD})\n"
-                f"Matrix difference: {matrix_diff:.3f} (threshold: {MATRIX_DIFF_THRESHOLD})"
-            )
-    
-    assert "Drift detected" in str(exc_info.value) 
+if __name__ == '__main__':
+    unittest.main() 

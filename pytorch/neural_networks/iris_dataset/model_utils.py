@@ -1,6 +1,8 @@
 import torch
 import os
 from .nn_lightning import IrisClassifier
+from torch.utils.data import DataLoader, TensorDataset
+from .config import BATCH_SIZE
 
 def load_model(model_path):
     """
@@ -19,20 +21,27 @@ def load_model(model_path):
     model.eval()
     return model
 
-def get_predictions(model, data_loader):
-    """
-    This is like giving our flower-sorting machine a bunch of flowers and
-    writing down what type it thinks each flower is!
-    """
-    all_preds = []
+def get_predictions(model, X_test, y_test=None):
+    """Get predictions from model"""
+    model.eval()
+    
+    # Convert input to DataLoader if it's not already
+    if not isinstance(X_test, DataLoader):
+        if y_test is not None:
+            dataset = TensorDataset(X_test, y_test)
+        else:
+            dataset = TensorDataset(X_test, torch.zeros(len(X_test)))  # Dummy labels
+        X_test = DataLoader(dataset, batch_size=BATCH_SIZE)
+    
+    all_predictions = []
     all_labels = []
     
     with torch.no_grad():
-        for batch in data_loader:
+        for batch in X_test:
             x, y = batch
             outputs = model(x)
-            preds = torch.argmax(outputs, dim=1)
-            all_preds.extend(preds.numpy())
-            all_labels.extend(y.numpy())
+            predictions = torch.argmax(outputs, dim=1)
+            all_predictions.extend(predictions.cpu())
+            all_labels.extend(y.cpu())
     
-    return all_preds, all_labels 
+    return torch.tensor(all_predictions), torch.tensor(all_labels) 

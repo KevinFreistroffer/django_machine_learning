@@ -79,52 +79,32 @@ X_test = torch.tensor(X_test, dtype=torch.float32)
 y_test = torch.tensor(y_test, dtype=torch.long)
 
 class IrisClassifier(pl.LightningModule):
-    def __init__(self):
+    def __init__(self, hparams=None):
         super().__init__()
-        # Match the architecture from IrisNN
-        self.fc1 = nn.Linear(4, 64)
-        self.bn1 = nn.BatchNorm1d(64)
+        # Store hyperparameters
+        self.save_hyperparameters(hparams)
+        if hparams is None:
+            self.learning_rate = 0.01
+        else:
+            self.learning_rate = hparams.get('learning_rate', 0.01)
         
-        self.fc2 = nn.Linear(64, 32)
-        self.bn2 = nn.BatchNorm1d(32)
+        # Define model layers
+        self.layer1 = nn.Linear(4, 8)
+        self.layer2 = nn.Linear(8, 6)
+        self.layer3 = nn.Linear(6, 3)
+        self.relu = nn.ReLU()
         
-        self.fc3 = nn.Linear(32, 3)
-        
-        self.relu = nn.LeakyReLU(0.1)
-        self.dropout = nn.Dropout(0.2)
+        # Define loss function
+        self.criterion = nn.CrossEntropyLoss()
         
     def forward(self, x):
-        x = self.fc1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
-        x = self.dropout(x)
-        
-        x = self.fc2(x)
-        x = self.bn2(x)
-        x = self.relu(x)
-        x = self.dropout(x)
-        
-        x = self.fc3(x)
+        x = self.relu(self.layer1(x))
+        x = self.relu(self.layer2(x))
+        x = self.layer3(x)
         return x
-        
-    def training_step(self, batch, batch_idx):
-        x, y = batch
-        logits = self(x)
-        loss = F.cross_entropy(logits, y)
-        self.log('train_loss', loss)
-        return loss
     
-    def validation_step(self, batch, batch_idx):
-        x, y = batch
-        logits = self(x)
-        loss = F.cross_entropy(logits, y)
-        preds = torch.argmax(logits, dim=1)
-        acc = (preds == y).float().mean()
-        self.log('val_loss', loss)
-        self.log('val_acc', acc)
-        
     def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=LEARNING_RATE)
+        return torch.optim.Adam(self.parameters(), lr=self.learning_rate)
 
 class IrisNN(pl.LightningModule):
     def __init__(self):
