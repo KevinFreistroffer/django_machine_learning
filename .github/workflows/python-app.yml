@@ -1,8 +1,0 @@
-# Add this step before running tests
-- name: Train models
-  run: |
-    PYTHONPATH=$PYTHONPATH:$(pwd) python -m pytorch.neural_networks.iris_dataset.train_model
-
-- name: Test with pytest
-  run: |
-    PYTHONPATH=$PYTHONPATH:$(pwd) python -m pytest pytorch/neural_networks/iris_dataset/tests/ --cov=pytorch/neural_networks/iris_dataset/ --cov-report=xml 
