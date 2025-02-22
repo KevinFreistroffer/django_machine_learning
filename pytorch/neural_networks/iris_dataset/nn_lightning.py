@@ -1,3 +1,12 @@
+import os
+import sys
+from pathlib import Path
+
+# Add project root to Python path
+project_root = str(Path(__file__).resolve().parents[3])
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import EarlyStopping
 import torch
@@ -9,7 +18,8 @@ from sklearn.preprocessing import StandardScaler
 import multiprocessing
 import numpy as np
 import torch.nn.functional as F
-from .config import LEARNING_RATE, MODEL_PATH, SCALER_PATH
+from pytorch.neural_networks.iris_dataset.config import LEARNING_RATE, MODEL_PATH, SCALER_PATH
+from pytorch.neural_networks.iris_dataset.data_utils import load_and_preprocess_data
 
 # Load the Iris dataset
 data = load_iris()
@@ -88,20 +98,30 @@ class IrisClassifier(pl.LightningModule):
         else:
             self.learning_rate = hparams.get('learning_rate', 0.01)
         
-        # Define model layers
-        self.layer1 = nn.Linear(4, 8)
-        self.layer2 = nn.Linear(8, 6)
-        self.layer3 = nn.Linear(6, 3)
-        self.relu = nn.ReLU()
+        # Define model layers with a better architecture
+        self.model = nn.Sequential(
+            nn.Linear(4, 64),
+            nn.ReLU(),
+            nn.BatchNorm1d(64),
+            nn.Dropout(0.3),
+            
+            nn.Linear(64, 32),
+            nn.ReLU(),
+            nn.BatchNorm1d(32),
+            nn.Dropout(0.2),
+            
+            nn.Linear(32, 16),
+            nn.ReLU(),
+            nn.BatchNorm1d(16),
+            
+            nn.Linear(16, 3)
+        )
         
         # Define loss function
         self.criterion = nn.CrossEntropyLoss()
-        
+    
     def forward(self, x):
-        x = self.relu(self.layer1(x))
-        x = self.relu(self.layer2(x))
-        x = self.layer3(x)
-        return x
+        return self.model(x)
     
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.learning_rate)
