@@ -129,128 +129,83 @@ class IrisClassifier(pl.LightningModule):
 class IrisNN(pl.LightningModule):
     def __init__(self):
         super(IrisNN, self).__init__()
-        # Our network is like a flower expert that learns to identify iris types
-        # It looks at 4 measurements (length/width of petals and sepals)
-        self.fc1 = nn.Linear(4, 64)  
-        # Helps keep all measurements on a similar scale, like using the same ruler
-        self.bn1 = nn.BatchNorm1d(64)
+        # Improved architecture
+        self.fc1 = nn.Linear(4, 128)  # Wider first layer
+        self.bn1 = nn.BatchNorm1d(128)
         
-        # Takes the first analysis and refines it further
-        self.fc2 = nn.Linear(64, 32)
-        self.bn2 = nn.BatchNorm1d(32)
+        self.fc2 = nn.Linear(128, 64)
+        self.bn2 = nn.BatchNorm1d(64)
         
-        # Makes the final decision: which of the 3 iris types it sees
-        self.fc3 = nn.Linear(32, 3)
+        self.fc3 = nn.Linear(64, 32)
+        self.bn3 = nn.BatchNorm1d(32)
         
-        # Helps the network learn subtle patterns
+        self.fc4 = nn.Linear(32, 3)
+        
+        self.dropout = nn.Dropout(0.3)
         self.relu = nn.LeakyReLU(0.1)
-        # Randomly ignores some information during training to prevent memorization
-        self.dropout = nn.Dropout(0.2)
-
+        
         self._init_weights()
 
     def _init_weights(self):
-        # Gives the network a smart starting point instead of random guesses
         for m in self.modules():
             if isinstance(m, nn.Linear):
-                nn.init.kaiming_normal_(m.weight, mode='fan_in', nonlinearity='leaky_relu')
-                if m.bias is not None:
-                    nn.init.constant_(m.bias, 0)
+                nn.init.xavier_normal_(m.weight)
+                nn.init.constant_(m.bias, 0)
             elif isinstance(m, nn.BatchNorm1d):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)
 
     def forward(self, x):
-        # This is like an assembly line for processing the flower measurements
-        x = self.dropout(self.relu(self.bn1(self.fc1(x))))  # First processing step
-        x = self.dropout(self.relu(self.bn2(self.fc2(x))))  # Second processing step
-        x = self.fc3(x)  # Final decision making
+        x = self.dropout(self.relu(self.bn1(self.fc1(x))))
+        x = self.dropout(self.relu(self.bn2(self.fc2(x))))
+        x = self.dropout(self.relu(self.bn3(self.fc3(x))))
+        x = self.fc4(x)
         return x
 
     def training_step(self, batch, batch_idx):
-        # This is where the network learns from each batch of flowers
-        # It makes predictions and adjusts itself when it makes mistakes
-        X, y = batch
-        logits = self(X)
-        loss = nn.CrossEntropyLoss()(logits, y)
+        x, y = batch
+        logits = self(x)
+        loss = F.cross_entropy(logits, y)
         preds = torch.argmax(logits, dim=1)
         acc = (preds == y).float().mean()
         
-        # Log metrics for monitoring overfitting
-        self.log('train_loss', loss, on_epoch=True, prog_bar=True)
-        self.log('train_acc', acc, on_epoch=True, prog_bar=True)
-        self.log('learning_rate', self.optimizer.param_groups[0]['lr'], prog_bar=True)
-        
+        self.log('train_loss', loss, on_epoch=True)
+        self.log('train_acc', acc, on_epoch=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
-        # Tests how well the network does on flowers it hasn't seen during training
-        # Helps us know if it's actually learning or just memorizing
-        X, y = batch
-        logits = self(X)
-        loss = nn.CrossEntropyLoss()(logits, y)
+        x, y = batch
+        logits = self(x)
+        loss = F.cross_entropy(logits, y)
         preds = torch.argmax(logits, dim=1)
         acc = (preds == y).float().mean()
         
-        # Log metrics for monitoring overfitting
-        self.log('val_loss', loss, on_epoch=True, prog_bar=True)
-        self.log('val_acc', acc, on_epoch=True, prog_bar=True)
-        self.log('val_f1', self._f1_score(preds, y), on_epoch=True, prog_bar=True)
-        
-        # Calculate and log the gap between train and val metrics
-        self.log('acc_gap', self.trainer.callback_metrics.get('train_acc', 0) - acc, 
-                on_epoch=True, prog_bar=True)
-        
+        self.log('val_loss', loss, on_epoch=True)
+        self.log('val_acc', acc, on_epoch=True)
         return loss
 
-    def _f1_score(self, preds, targets, eps=1e-8):
-        # Gives us a balanced score of how well we're doing
-        # Makes sure we're good at identifying all types of irises, not just some
-        # For each type of flower, we count:
-        tp = torch.zeros(3).to(preds.device)  # When we said "it's this flower" and we were right!
-        fp = torch.zeros(3).to(preds.device)  # Oops! We said "it's this flower" but we were wrong
-        fn = torch.zeros(3).to(preds.device)  # We missed this flower when we should have found it
-        
-        for i in range(3):
-            tp[i] = ((preds == i) & (targets == i)).sum()
-            fp[i] = ((preds == i) & (targets != i)).sum()
-            fn[i] = ((preds != i) & (targets == i)).sum()
-        
-        precision = tp / (tp + fp + eps)  # How many of our positive predictions were correct
-        recall = tp / (tp + fn + eps)     # How many actual positives did we catch
-        f1 = 2 * (precision * recall) / (precision + recall + eps)  # Combines both measures
-        return f1.mean()
-
     def configure_optimizers(self):
-        # Sets up how the network learns:
-        # - How big steps it takes when learning
-        # - How it adjusts its learning speed over time
-        self.optimizer = torch.optim.AdamW(
+        optimizer = torch.optim.AdamW(
             self.parameters(),
             lr=0.001,
             weight_decay=0.01,
             amsgrad=True
         )
-        
-        # Calculate steps_per_epoch based on dataset size and batch size
-        steps_per_epoch = len(X_train) // 32  # batch_size = 32
-        
-        # Learning schedule
-        scheduler = {
-            "scheduler": torch.optim.lr_scheduler.OneCycleLR(
-                self.optimizer,
-                max_lr=0.001,
-                epochs=200,
-                steps_per_epoch=steps_per_epoch,  # Use calculated value
-                pct_start=0.3,
-                div_factor=25.0,
-                final_div_factor=1000.0
-            ),
-            "interval": "step",
-            "frequency": 1
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer,
+            mode='min',
+            factor=0.5,
+            patience=5,
+            verbose=True
+        )
+        return {
+            "optimizer": optimizer,
+            "lr_scheduler": {
+                "scheduler": scheduler,
+                "monitor": "val_loss",
+                "frequency": 1
+            }
         }
-        
-        return [self.optimizer], [scheduler]
 
 def main():
     # The main training program:

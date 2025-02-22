@@ -23,8 +23,8 @@ def train_and_save_model():
     X_train_aug, y_train_aug = augment_data(
         X_train.numpy(), 
         y_train.numpy(),
-        noise_factor=0.02,  # Even less noise
-        n_synthetic=4      # More synthetic samples
+        noise_factor=0.01,  # Even less noise
+        n_synthetic=5      # More synthetic samples
     )
     
     # Convert augmented data to tensors
