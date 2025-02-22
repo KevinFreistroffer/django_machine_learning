@@ -4,28 +4,18 @@ from .nn_lightning import IrisClassifier
 from torch.utils.data import DataLoader, TensorDataset
 from .config import BATCH_SIZE
 from sklearn.preprocessing import StandardScaler
+from .nn_lightning import IrisNN
 
 def load_model(model_path):
     """Load the trained model from checkpoint"""
     try:
-        # Load checkpoint first
-        checkpoint = torch.load(model_path, weights_only=True)
-        
         # Create a new model instance
-        model = IrisClassifier()
+        model = IrisNN()  # Use IrisNN instead of IrisClassifier
         
-        # Clean and load state dict
-        if 'state_dict' in checkpoint:
-            state_dict = checkpoint['state_dict']
-            # Remove any unexpected keys
-            state_dict = {k: v for k, v in state_dict.items() 
-                         if k.startswith('model.') and not k.startswith('criterion')}
-        else:
-            state_dict = checkpoint
-        
-        # Load the state dict
-        model.load_state_dict(state_dict, strict=False)
-        model.eval()  # Set to evaluation mode
+        # Load state dict
+        state_dict = torch.load(model_path, weights_only=True)
+        model.load_state_dict(state_dict)
+        model.eval()
         return model
         
     except Exception as e:
