@@ -94,37 +94,80 @@ class IrisClassifier(pl.LightningModule):
         # Store hyperparameters
         self.save_hyperparameters(hparams)
         if hparams is None:
-            self.learning_rate = 0.01
+            self.learning_rate = 0.001  # Lower learning rate
         else:
-            self.learning_rate = hparams.get('learning_rate', 0.01)
+            self.learning_rate = hparams.get('learning_rate', 0.001)
         
-        # Define model layers with a better architecture
+        # Improved architecture
         self.model = nn.Sequential(
-            nn.Linear(4, 64),
+            nn.Linear(4, 128),  # Wider first layer
+            nn.ReLU(),
+            nn.BatchNorm1d(128),
+            nn.Dropout(0.2),  # Reduced dropout
+            
+            nn.Linear(128, 64),
             nn.ReLU(),
             nn.BatchNorm1d(64),
-            nn.Dropout(0.3),
+            nn.Dropout(0.2),
             
             nn.Linear(64, 32),
             nn.ReLU(),
             nn.BatchNorm1d(32),
-            nn.Dropout(0.2),
             
-            nn.Linear(32, 16),
-            nn.ReLU(),
-            nn.BatchNorm1d(16),
-            
-            nn.Linear(16, 3)
+            nn.Linear(32, 3)
         )
         
-        # Define loss function
-        self.criterion = nn.CrossEntropyLoss()
+        # Initialize weights properly
+        self._init_weights()
+        
+        # Define loss function with label smoothing
+        self.criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
+    
+    def _init_weights(self):
+        """Initialize weights for better training"""
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.xavier_normal_(m.weight)
+                nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.BatchNorm1d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
     
     def forward(self, x):
         return self.model(x)
     
+    def training_step(self, batch, batch_idx):
+        x, y = batch
+        logits = self(x)
+        loss = self.criterion(logits, y)
+        preds = torch.argmax(logits, dim=1)
+        acc = (preds == y).float().mean()
+        
+        self.log('train_loss', loss, on_epoch=True)
+        self.log('train_acc', acc, on_epoch=True)
+        return loss
+    
     def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=self.learning_rate)
+        optimizer = torch.optim.AdamW(
+            self.parameters(),
+            lr=self.learning_rate,
+            weight_decay=0.01,  # L2 regularization
+            amsgrad=True
+        )
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer,
+            mode='min',
+            factor=0.5,
+            patience=5,
+            verbose=True
+        )
+        return {
+            "optimizer": optimizer,
+            "lr_scheduler": {
+                "scheduler": scheduler,
+                "monitor": "train_loss"
+            }
+        }
 
 class IrisNN(pl.LightningModule):
     def __init__(self):
