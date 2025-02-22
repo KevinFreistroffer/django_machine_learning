@@ -16,6 +16,11 @@ from pytorch.neural_networks.iris_dataset.config import MODEL_PATH, BATCH_SIZE
 
 def train_and_save_model():
     """Train the model and save it"""
+    # Set seeds for reproducibility
+    pl.seed_everything(42, workers=True)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    
     # Load and preprocess data with validation split
     X_train, X_val, y_train, y_val = load_and_preprocess_data(return_val=True)
     

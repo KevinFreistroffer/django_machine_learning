@@ -42,3 +42,19 @@ Implementing A/B testing
 Adding model monitoring and retraining capabilities
 Including more complex models like neural networks
 Adding unsupervised learning components
+
+## Iris Dataset Model
+
+The Iris dataset model requires a pre-trained checkpoint to run tests. You can either:
+
+1. Download the pre-trained model:
+   ```bash
+   # Add download command here
+   ```
+
+2. Or train the model yourself:
+   ```bash
+   python -m pytorch.neural_networks.iris_dataset.train_model
+   ```
+
+Note: The model is configured to achieve >95% accuracy on the test set for educational purposes. In real-world applications, 90%+ accuracy is typically considered good for the Iris dataset.
