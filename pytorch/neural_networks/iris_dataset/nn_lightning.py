@@ -98,7 +98,7 @@ class IrisClassifier(pl.LightningModule):
         else:
             self.learning_rate = hparams.get('learning_rate', 0.001)
         
-        # Match the saved checkpoint architecture
+        # Exactly match the original architecture
         self.model = nn.Sequential(
             nn.Linear(4, 64),
             nn.ReLU(),
@@ -117,18 +117,39 @@ class IrisClassifier(pl.LightningModule):
             nn.Linear(16, 3)
         )
         
-        # Define loss function with label smoothing
-        self.criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
+        # Standard cross entropy loss
+        self.criterion = nn.CrossEntropyLoss()
     
     def forward(self, x):
         return self.model(x)
     
+    def training_step(self, batch, batch_idx):
+        x, y = batch
+        logits = self(x)
+        loss = self.criterion(logits, y)
+        
+        preds = torch.argmax(logits, dim=1)
+        acc = (preds == y).float().mean()
+        
+        self.log('train_loss', loss, on_epoch=True)
+        self.log('train_acc', acc, on_epoch=True)
+        return loss
+    
+    def validation_step(self, batch, batch_idx):
+        x, y = batch
+        logits = self(x)
+        loss = self.criterion(logits, y)
+        preds = torch.argmax(logits, dim=1)
+        acc = (preds == y).float().mean()
+        
+        self.log('val_loss', loss, on_epoch=True)
+        self.log('val_acc', acc, on_epoch=True)
+        return loss
+    
     def configure_optimizers(self):
-        optimizer = torch.optim.AdamW(
+        optimizer = torch.optim.Adam(
             self.parameters(),
-            lr=self.learning_rate,
-            weight_decay=0.01,
-            amsgrad=True
+            lr=self.learning_rate
         )
         return optimizer
 

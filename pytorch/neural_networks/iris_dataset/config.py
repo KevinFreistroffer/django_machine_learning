@@ -14,7 +14,8 @@ TEST_DATA_PATH = str(IRIS_DIR / 'data' / 'test_dataset.pt')
 os.makedirs(IRIS_DIR / 'checkpoints', exist_ok=True)
 os.makedirs(IRIS_DIR / 'data', exist_ok=True)
 
-# Model validation thresholds
+# Set high accuracy threshold for educational purposes
+# Note: For real-world Iris classification, 90%+ is typically considered good
 ACCURACY_THRESHOLD = 0.95
 PRECISION_THRESHOLD = 0.30
 RECALL_THRESHOLD = 0.30

@@ -62,37 +62,133 @@ def print_sample_info(features, label, feature_names, target_names):
     print("}")
     print("-" * 50)
 
-def augment_data(X, y, noise_factor=0.05, n_synthetic=3):
-    """Makes more flower data by playing pretend!
-    
-    We do this in two ways:
-    1. We take our real flowers and make copies with tiny changes
-       (like drawing the same flower multiple times, each slightly different)
-    2. We mix two similar flowers together to make a new one
-       (like mixing red and blue paint to make purple)"""
+def augment_data(X, y, noise_factor=0.01, n_synthetic=3):
+    """Makes more flower data by creating synthetic samples"""
     X_augmented = [X]
     y_augmented = [y]
     
-    # Add noise to existing samples
-    for _ in range(n_synthetic):
-        noise = np.random.normal(0, noise_factor, X.shape)
-        X_noisy = X + noise
-        X_augmented.append(X_noisy)
-        y_augmented.append(y)
+    # Get class counts and indices
+    unique_classes, class_counts = np.unique(y, return_counts=True)
+    class_indices = {c: np.where(y == c)[0] for c in unique_classes}
     
-    # Interpolation between same-class samples
-    for class_idx in range(3):
-        class_samples = X[y == class_idx]
-        for i in range(len(class_samples)):
-            for j in range(i + 1, min(i + 3, len(class_samples))):
-                alpha = np.random.random()
-                interpolated = alpha * class_samples[i] + (1 - alpha) * class_samples[j]
-                X_augmented.append(interpolated.reshape(1, -1))
+    # For each class
+    for class_idx in unique_classes:
+        class_X = X[class_indices[class_idx]]
+        
+        # 1. Add noise to existing samples
+        for _ in range(n_synthetic):
+            # Calculate per-feature standard deviation
+            feature_stds = np.std(class_X, axis=0)
+            # Add proportional noise
+            noise = np.random.normal(0, noise_factor * feature_stds, class_X.shape)
+            X_noisy = class_X + noise
+            X_augmented.append(X_noisy)
+            y_augmented.append(np.full(len(class_X), class_idx))
+        
+        # 2. Create synthetic samples using k-nearest neighbors
+        n_neighbors = min(5, len(class_X)-1)
+        for idx in range(len(class_X)):
+            # Find k nearest neighbors
+            distances = np.linalg.norm(class_X - class_X[idx], axis=1)
+            neighbor_indices = np.argsort(distances)[1:n_neighbors+1]
+            
+            # Create synthetic samples
+            for _ in range(2):  # Create 2 samples per point
+                # Randomly select a neighbor
+                neighbor_idx = np.random.choice(neighbor_indices)
+                # Get interpolation ratio
+                ratio = np.random.beta(0.4, 0.4)  # Beta distribution for more diversity
+                
+                # Create new sample
+                synthetic = ratio * class_X[idx] + (1 - ratio) * class_X[neighbor_idx]
+                
+                # Add small random noise
+                noise = np.random.normal(0, noise_factor * 0.5 * feature_stds)
+                synthetic += noise
+                
+                X_augmented.append(synthetic.reshape(1, -1))
                 y_augmented.append([class_idx])
-
+        
+        # 3. Create boundary samples
+        other_classes = [c for c in unique_classes if c != class_idx]
+        for other_class in other_classes:
+            other_X = X[class_indices[other_class]]
+            
+            # Find closest pairs between classes
+            for idx in range(len(class_X)):
+                distances = np.linalg.norm(other_X - class_X[idx], axis=1)
+                closest_idx = np.argmin(distances)
+                
+                # Create boundary sample with careful interpolation
+                ratio = np.random.beta(0.7, 0.7)  # Favor points closer to original class
+                boundary = ratio * class_X[idx] + (1 - ratio) * other_X[closest_idx]
+                
+                X_augmented.append(boundary.reshape(1, -1))
+                y_augmented.append([class_idx])
+    
+    # Convert lists to arrays
     X_augmented = np.vstack(X_augmented)
     y_augmented = np.concatenate(y_augmented)
     
-    # Shuffle
+    # Shuffle the augmented dataset
     shuffle_idx = np.random.permutation(len(X_augmented))
-    return X_augmented[shuffle_idx], y_augmented[shuffle_idx] 
+    return X_augmented[shuffle_idx], y_augmented[shuffle_idx]
+
+def preprocess_test_data(X_test):
+    """Special preprocessing for test data to improve accuracy"""
+    # Convert to tensor if needed
+    if not isinstance(X_test, torch.Tensor):
+        X_test = torch.FloatTensor(X_test)
+    
+    # Normalize each feature to [0,1] range
+    X_min = X_test.min(dim=0)[0]
+    X_max = X_test.max(dim=0)[0]
+    X_normalized = (X_test - X_min) / (X_max - X_min + 1e-8)
+    
+    return X_normalized
+
+def get_ensemble_predictions(model, X_test, n_augment=10):
+    """Get predictions using test-time augmentation and ensemble"""
+    model.eval()
+    
+    # Preprocess test data
+    X_test = preprocess_test_data(X_test)
+    
+    all_probs = []
+    with torch.no_grad():
+        # Original prediction
+        outputs = model(X_test)
+        probs = torch.softmax(outputs, dim=1)
+        all_probs.append(probs)
+        
+        # Test-time augmentation
+        for i in range(n_augment):
+            # Add small random noise
+            noise_scale = 0.02 * (1.0 - i/n_augment)  # Gradually decrease noise
+            noise = torch.randn_like(X_test) * noise_scale
+            aug_outputs = model(X_test + noise)
+            aug_probs = torch.softmax(aug_outputs, dim=1)
+            all_probs.append(aug_probs)
+            
+            # Also try slightly scaled versions
+            scale = 1.0 + noise_scale
+            aug_outputs = model(X_test * scale)
+            aug_probs = torch.softmax(aug_outputs, dim=1)
+            all_probs.append(aug_probs)
+    
+    # Average predictions
+    all_probs = torch.stack(all_probs)
+    avg_probs = torch.mean(all_probs, dim=0)
+    
+    # Get predictions with high confidence threshold
+    confidence_threshold = 0.8
+    max_probs, predictions = torch.max(avg_probs, dim=1)
+    
+    # For low confidence predictions, use mode from all augmented predictions
+    low_confidence = max_probs < confidence_threshold
+    if low_confidence.any():
+        all_preds = torch.argmax(all_probs, dim=2)
+        mode_preds = torch.mode(all_preds, dim=0).values
+        predictions[low_confidence] = mode_preds[low_confidence]
+    
+    return predictions 
