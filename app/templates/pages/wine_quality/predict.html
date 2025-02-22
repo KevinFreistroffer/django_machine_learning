@@ -2,34 +2,190 @@
 {% load wine_quality_extras %}
 
 {% block content %}
-<div class="container mt-5">
-    <h2>Wine Quality Predictor</h2>
-    <p>Enter wine characteristics to predict its quality (score from 3-9)</p>
+<div class="row">
+    <div class="col-12">
+        <h2>Wine Quality Prediction</h2>
+        <p class="lead">Enter wine characteristics manually or select from sample data to predict the wine quality (score from 3-9)</p>
+        
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+            {{ form.non_field_errors }}
+        </div>
+        {% endif %}
 
-    <div class="row">
-        <!-- Prediction Form -->
-        <div class="col-md-6">
+        <!-- Hidden form for submissions -->
+        <form method="post" id="prediction-form" style="display: none;">
+            {% csrf_token %}
+            {% for field in form %}
+            <input type="hidden" name="{{ field.name }}" id="hidden_{{ field.name }}">
+            {% endfor %}
+        </form>
+        
+        <div class="row g-3">
+            <!-- Left side: Input form -->
+            <div class="col-md-5">
+                <div class="card h-100">
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">Input Measurements</h5>
+                        <div id="manual-form" class="flex-grow-1" style="max-height: 600px; overflow-y: auto; padding-right: 10px;">
+                            <form method="post" id="prediction-form">
+                                {% csrf_token %}
+                                {% for field in form %}
+                                <div class="mb-3">
+                                    <label for="visible_{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                                    <input type="{{ field.field.widget.input_type }}" 
+                                           class="form-control" 
+                                           id="visible_{{ field.name }}"
+                                           step="0.01"
+                                           onchange="updateHiddenField('{{ field.name }}')"
+                                           value="{{ field.value|default:'' }}">
+                                    {% if field.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ field.errors }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                                <button type="button" class="btn btn-primary">Predict Quality</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right side: Sample data -->
+            <div class="col-md-7">
+                <div class="card h-100">
+                    <div class="card-body d-flex flex-column">
+                        <div>
+                            <h5 class="card-title">Sample Dataset 
+                                <span class="badge bg-secondary">{{ stats.total_samples }} samples</span>
+                            </h5>
+                            <div class="d-flex gap-2 mb-2">
+                                {% for range, count in stats.quality_ranges.items %}
+                                <span class="badge {% if 'Premium' in range %}bg-success{% elif 'Average' in range %}bg-warning{% else %}bg-danger{% endif %}">
+                                    {{ range }}: {{ count }}
+                                </span>
+                                {% endfor %}
+                            </div>
+                            <p class="small mb-0">Click any row to use that data for prediction</p>
+                        </div>
+                        <div class="table-responsive flex-grow-1" style="max-height: 600px; overflow-y: auto;">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead class="sticky-top bg-white">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Alcohol</th>
+                                        <th>Malic Acid</th>
+                                        <th>Color</th>
+                                        <th>Quality</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for row in test_data %}
+                                    <tr style="cursor: pointer;" 
+                                        onclick="useSampleData(this)"
+                                        data-alcohol="{{ row.alcohol }}"
+                                        data-malic-acid="{{ row.malic_acid }}"
+                                        data-ash="{{ row.ash }}"
+                                        data-alcalinity-of-ash="{{ row.alcalinity_of_ash }}"
+                                        data-magnesium="{{ row.magnesium }}"
+                                        data-total-phenols="{{ row.total_phenols }}"
+                                        data-flavanoids="{{ row.flavanoids }}"
+                                        data-nonflavanoid-phenols="{{ row.nonflavanoid_phenols }}"
+                                        data-proanthocyanins="{{ row.proanthocyanins }}"
+                                        data-color-intensity="{{ row.color_intensity }}"
+                                        data-hue="{{ row.hue }}"
+                                        data-od280-od315="{{ row.od280_od315 }}"
+                                        data-proline="{{ row.proline }}"
+                                        data-actual-quality="{{ row.actual_quality }}"
+                                        data-bs-toggle="tooltip"
+                                        title="Click to use this data"
+                                        class="sample-row opacity-75 hover-opacity-100 {% if row.quality_class == 'Premium' %}table-success{% elif row.quality_class == 'Average' %}table-warning{% else %}table-danger{% endif %}">
+                                        <td>{{ forloop.counter }}</td>
+                                        <td>{{ row.alcohol|floatformat:2 }}</td>
+                                        <td>{{ row.malic_acid|floatformat:2 }}</td>
+                                        <td>{{ row.color_intensity|floatformat:2 }}</td>
+                                        <td><span class="badge {% if row.quality_class == 'Premium' %}bg-success{% elif row.quality_class == 'Average' %}bg-warning{% else %}bg-danger{% endif %}">
+                                            {{ row.actual_quality|floatformat:1 }}
+                                        </span></td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="mt-2 small text-muted">
+                            <strong>Quality Ranges:</strong> Below Average (3-4), Average (5-6), Premium (7-9)
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Prediction Results -->
+        {% if prediction %}
+        <div class="mt-4">
             <div class="card">
                 <div class="card-body">
-                    <h5 class="card-title">Enter Wine Details</h5>
-                    <form method="post">
-                        {% csrf_token %}
-                        {% for field in form %}
-                        <div class="mb-3">
-                            <label for="{{ field.id_for_label }}" class="form-label">
-                                {{ field.label }}
-                            </label>
-                            {{ field }}
+                    <h5 class="card-title">Prediction Result</h5>
+                    <p class="display-4">Quality Score: {{ prediction.predicted_quality|floatformat:1 }}</p>
+                    
+                    <h6 class="mt-4">Input Features:</h6>
+                    <table class="table">
+                        <tbody>
+                            {% for key, value in prediction.features.items %}
+                            <tr>
+                                <th>{{ key|title }}</th>
+                                <td>{{ value }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+
+                    <div class="mt-3">
+                        {% if prediction.error < 0.5 %}
+                        <div class="alert alert-success">
+                            <strong>Excellent Prediction!</strong> The predicted quality is very close to the actual quality (error < 0.5).
                         </div>
-                        {% endfor %}
-                        <button type="submit" class="btn btn-primary">Predict Quality</button>
-                    </form>
+                        {% elif prediction.error < 1.0 %}
+                        <div class="alert alert-warning">
+                            <strong>Good Prediction!</strong> The predicted quality is reasonably close to the actual quality (error < 1.0).
+                        </div>
+                        {% else %}
+                        <div class="alert alert-danger">
+                            <strong>Poor Prediction!</strong> The predicted quality differs significantly from the actual quality (error > 1.0).
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- About Section -->
+        <div class="mt-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">About Wine Quality Prediction</h5>
+                    <p>This model predicts wine quality based on various chemical properties:</p>
+                    <ul>
+                        <li><strong>Alcohol:</strong> Alcohol content</li>
+                        <li><strong>Malic Acid:</strong> Malic acid content</li>
+                        <li><strong>Color Intensity:</strong> Wine color intensity</li>
+                        <li><strong>And more...</strong> Various other chemical properties</li>
+                    </ul>
+                    <p>The model predicts a quality score between 3 and 9, where:</p>
+                    <ul>
+                        <li>3-4: Below Average Quality</li>
+                        <li>5-6: Average Quality</li>
+                        <li>7-9: Premium Quality</li>
+                    </ul>
                 </div>
             </div>
         </div>
 
         <!-- Recent Predictions -->
-        <div class="col-md-6">
+        <div class="mt-4">
             <div class="card">
                 <div class="card-body">
                     <h5 class="card-title">Recent Predictions</h5>
@@ -45,7 +201,7 @@
                             </thead>
                             <tbody>
                                 {% for pred in predictions %}
-                                <tr>
+                                <tr class="{% if pred.predicted_quality|subtract:pred.actual_quality|absolute < 0.5 %}table-success{% elif pred.predicted_quality|subtract:pred.actual_quality|absolute < 1.0 %}table-warning{% else %}table-danger{% endif %}">
                                     <td>{{ pred.predicted_quality|floatformat:1 }}</td>
                                     <td>{{ pred.actual_quality|floatformat:1 }}</td>
                                     <td>{{ pred.prediction_confidence|floatformat:2 }}</td>
@@ -60,4 +216,121 @@
         </div>
     </div>
 </div>
+
+<style>
+.table-responsive {
+    scrollbar-width: thin;
+    scrollbar-color: #6c757d #f8f9fa;
+    overflow-y: auto;
+    position: relative;
+}
+
+.sticky-top {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background-color: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.hover-opacity-100:hover {
+    opacity: 1 !important;
+}
+
+.table-responsive::-webkit-scrollbar {
+    width: 8px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background: #f8f9fa;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background-color: #6c757d;
+    border-radius: 4px;
+}
+
+.g-3 {
+    --bs-gutter-y: 1rem;
+}
+
+.tooltip {
+    position: absolute;
+    z-index: 1;
+}
+
+#sample-table {
+    padding-bottom: 2rem;
+}
+</style>
+
+<script>
+function updateHiddenField(fieldName) {
+    const visibleField = document.getElementById('visible_' + fieldName);
+    const hiddenField = document.getElementById('hidden_' + fieldName);
+    hiddenField.value = visibleField.value;
+}
+
+function submitForm() {
+    document.getElementById('prediction-form').submit();
+}
+
+function useSampleData(row) {
+    const data = row.dataset;
+    console.log('Dataset:', data);  // Debug log
+    
+    const fields = [
+        'alcohol', 'malic_acid', 'ash', 'alcalinity_of_ash', 'magnesium',
+        'total_phenols', 'flavanoids', 'nonflavanoid_phenols', 'proanthocyanins',
+        'color_intensity', 'hue', 'od280_od315', 'proline', 'actual_quality'
+    ];
+    
+    fields.forEach(field => {
+        // Convert snake_case to camelCase for dataset lookup
+        const dataKey = field.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+        
+        const visibleField = document.getElementById('visible_' + field);
+        const hiddenField = document.getElementById('hidden_' + field);
+        
+        if (visibleField && hiddenField && data[dataKey]) {
+            visibleField.value = data[dataKey];
+            hiddenField.value = data[dataKey];
+        }
+    });
+}
+
+function updateAllHiddenFields() {
+    const fields = [
+        'alcohol', 'malic_acid', 'ash', 'alcalinity_of_ash', 'magnesium',
+        'total_phenols', 'flavanoids', 'nonflavanoid_phenols', 'proanthocyanins',
+        'color_intensity', 'hue', 'od280_od315', 'proline', 'actual_quality'
+    ];
+    fields.forEach(field => updateHiddenField(field));
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Initialize form fields
+    updateAllHiddenFields();
+
+    // Match table height to form height
+    function matchHeight() {
+        const formCard = document.querySelector('#manual-form');
+        const tableContainer = document.getElementById('sample-table');
+        if (formCard && tableContainer) {
+            const formHeight = formCard.offsetHeight;
+            tableContainer.style.height = `${formHeight}px`;
+        }
+    }
+
+    // Run on load and window resize
+    matchHeight();
+    window.addEventListener('resize', matchHeight);
+});
+</script>
 {% endblock %} 
