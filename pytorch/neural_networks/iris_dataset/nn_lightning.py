@@ -307,11 +307,17 @@ def main():
 
     # Save the model and scaler
     trainer.save_checkpoint(MODEL_PATH)
-    np.save(SCALER_PATH, {
-        'scaler_mean': scaler.mean_,
-        'scaler_scale': scaler.scale_
-    })
-
+    
+    # Create models directory if it doesn't exist
+    os.makedirs(os.path.dirname(SCALER_PATH), exist_ok=True)
+    
+    # Save scaler data as a dictionary
+    scaler_data = {
+        'mean_': scaler.mean_,
+        'scale_': scaler.scale_
+    }
+    np.save(SCALER_PATH, scaler_data)
+    
     # Print sample predictions
     model.eval()
     with torch.no_grad():
