@@ -98,26 +98,23 @@ class IrisClassifier(pl.LightningModule):
         else:
             self.learning_rate = hparams.get('learning_rate', 0.001)
         
-        # Exactly match the original architecture
+        # Simple but effective architecture
         self.model = nn.Sequential(
-            nn.Linear(4, 64),
-            nn.ReLU(),
-            nn.BatchNorm1d(64),
-            nn.Dropout(0.3),
-            
-            nn.Linear(64, 32),
+            # First layer
+            nn.Linear(4, 32),
             nn.ReLU(),
             nn.BatchNorm1d(32),
-            nn.Dropout(0.2),
             
+            # Second layer
             nn.Linear(32, 16),
             nn.ReLU(),
             nn.BatchNorm1d(16),
             
+            # Output layer
             nn.Linear(16, 3)
         )
         
-        # Standard cross entropy loss
+        # Basic cross entropy loss
         self.criterion = nn.CrossEntropyLoss()
     
     def forward(self, x):
@@ -149,9 +146,26 @@ class IrisClassifier(pl.LightningModule):
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(
             self.parameters(),
-            lr=self.learning_rate
+            lr=self.learning_rate,
+            weight_decay=0.01  # Add L2 regularization
         )
-        return optimizer
+        
+        # Add learning rate scheduler
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer,
+            mode='min',
+            factor=0.5,
+            patience=5,
+            verbose=True
+        )
+        
+        return {
+            "optimizer": optimizer,
+            "lr_scheduler": {
+                "scheduler": scheduler,
+                "monitor": "val_loss"
+            }
+        }
 
 class IrisNN(pl.LightningModule):
     def __init__(self):
