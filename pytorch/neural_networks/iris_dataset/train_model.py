@@ -10,7 +10,7 @@ if project_root not in sys.path:
 import torch
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import EarlyStopping
-from pytorch.neural_networks.iris_dataset.nn_lightning import IrisNN
+from pytorch.neural_networks.iris_dataset.nn_lightning import IrisClassifier
 from pytorch.neural_networks.iris_dataset.data_utils import load_and_preprocess_data, augment_data
 from pytorch.neural_networks.iris_dataset.config import MODEL_PATH, EPOCHS, LEARNING_RATE
 
@@ -23,7 +23,7 @@ def train_and_save_model():
     X_train_aug, y_train_aug = augment_data(
         X_train.numpy(), 
         y_train.numpy(),
-        noise_factor=0.01,  # Even less noise
+        noise_factor=0.01,  # Very small noise
         n_synthetic=5      # More synthetic samples
     )
     
@@ -49,12 +49,17 @@ def train_and_save_model():
         persistent_workers=True
     )
     
-    # Initialize model
-    model = IrisNN()
+    # Initialize model with hyperparameters
+    hparams = {
+        'learning_rate': 0.001,
+        'weight_decay': 0.01,
+        'dropout_rate': 0.3
+    }
+    model = IrisClassifier(hparams=hparams)
     
     # Early stopping callback
     early_stopping = EarlyStopping(
-        monitor='val_acc',  # Monitor validation accuracy
+        monitor='val_acc',
         mode='max',
         patience=20,
         min_delta=0.001,
@@ -63,7 +68,7 @@ def train_and_save_model():
     
     # Create trainer
     trainer = pl.Trainer(
-        max_epochs=EPOCHS * 4,  # Even more epochs
+        max_epochs=EPOCHS * 4,
         callbacks=[early_stopping],
         enable_progress_bar=True,
         gradient_clip_val=0.5,

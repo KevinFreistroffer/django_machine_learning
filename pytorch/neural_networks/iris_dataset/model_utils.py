@@ -1,20 +1,17 @@
 import torch
 import os
-from .nn_lightning import IrisNN
+from .nn_lightning import IrisClassifier
 from torch.utils.data import DataLoader, TensorDataset
 from .config import BATCH_SIZE
 
 def load_model(model_path):
-    """
-    Think of this like opening a saved coloring book! We're getting back our
-    special flower-sorting machine that we saved earlier.
-    """
+    """Load the trained model from checkpoint"""
     try:
-        # First, we try to open it like a fancy coloring book (Lightning style)
-        model = IrisNN.load_from_checkpoint(model_path)
+        # Try to load as Lightning checkpoint
+        model = IrisClassifier.load_from_checkpoint(model_path)
     except Exception:
-        # Oops! If that doesn't work, we'll open it like a regular coloring book
-        model = IrisNN()
+        # Fallback to manual loading
+        model = IrisClassifier()
         checkpoint = torch.load(model_path)
         model.load_state_dict(checkpoint['state_dict'])
     
