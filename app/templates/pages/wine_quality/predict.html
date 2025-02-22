@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load wine_quality_extras %}
+{% load tz %}
 
 {% block content %}
 <div class="row">
@@ -181,23 +182,27 @@
             <div class="card">
                 <div class="card-body">
                     <h5 class="card-title">Recent Predictions</h5>
-                    <div class="table-responsive">
+                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
                         <table class="table">
-                            <thead>
+                            <thead class="sticky-top bg-white">
                                 <tr>
+                                    <th>#</th>
                                     <th>Predicted</th>
                                     <th>Actual</th>
                                     <th>Confidence</th>
                                     <th>Error</th>
+                                    <th>Date</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for pred in predictions %}
                                 <tr class="{% if pred.predicted_quality|subtract:pred.actual_quality|absolute < 0.5 %}table-success{% elif pred.predicted_quality|subtract:pred.actual_quality|absolute < 1.0 %}table-warning{% else %}table-danger{% endif %}">
+                                    <td>{{ forloop.counter }}</td>
                                     <td>{{ pred.predicted_quality|floatformat:1 }}</td>
                                     <td>{{ pred.actual_quality|floatformat:1 }}</td>
                                     <td>{{ pred.prediction_confidence|floatformat:2 }}</td>
                                     <td>{{ pred.predicted_quality|subtract:pred.actual_quality|absolute|floatformat:2 }}</td>
+                                    <td>{{ pred.created_at|timezone:"America/Los_Angeles"|date:"M d, Y g:i A" }}</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
