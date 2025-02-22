@@ -40,12 +40,6 @@ def get_predictions(model, X_test, y_test=None):
     if not isinstance(X_test, torch.Tensor):
         X_test = torch.FloatTensor(X_test)
     
-    # Standardize the test data
-    scaler = StandardScaler()
-    X_test_np = X_test.numpy()
-    X_test_scaled = scaler.fit_transform(X_test_np)
-    X_test = torch.FloatTensor(X_test_scaled)
-    
     # Get predictions
     with torch.no_grad():
         outputs = model(X_test)

@@ -6,6 +6,10 @@ import numpy as np
 
 def load_and_preprocess_data(test_mode=False, return_val=False):
     """Load and preprocess the Iris dataset"""
+    # Set random seed for reproducibility
+    np.random.seed(42)
+    torch.manual_seed(42)
+    
     # Load data
     iris = load_iris()
     X = iris.data
@@ -16,7 +20,7 @@ def load_and_preprocess_data(test_mode=False, return_val=False):
     X_scaled = scaler.fit_transform(X)
     
     if return_val:
-        # Split into train, validation, and test
+        # Split into train, validation, and test with stratification
         X_train, X_temp, y_train, y_temp = train_test_split(
             X_scaled, y, test_size=0.4, random_state=42, stratify=y
         )
