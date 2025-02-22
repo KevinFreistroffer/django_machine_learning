@@ -38,7 +38,7 @@ def wine_quality_view(request):
     
     # Use more data points (similar to Iris dataset)
     for i in range(30):  # Increased from 5 to 30 samples
-        quality = np.random.uniform(3, 9)
+        quality = round(np.random.uniform(3, 9), 1)  # Round to 1 decimal place
         
         # Update stats
         if quality >= 7:
