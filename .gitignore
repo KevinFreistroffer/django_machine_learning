@@ -46,3 +46,4 @@ k8s/**/*.tmp        # Any temporary files in k8s directory
 pytorch/neural_networks/iris_dataset/data/test_dataset.pt
 pytorch/neural_networks/iris_dataset/checkpoints/*
 !pytorch/neural_networks/iris_dataset/checkpoints/.gitkeep
+lightning_logs/

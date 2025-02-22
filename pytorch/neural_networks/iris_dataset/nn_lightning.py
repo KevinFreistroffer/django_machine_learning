@@ -128,39 +128,28 @@ class IrisClassifier(pl.LightningModule):
 
 class IrisNN(pl.LightningModule):
     def __init__(self):
-        super(IrisNN, self).__init__()
-        # Improved architecture
-        self.fc1 = nn.Linear(4, 128)  # Wider first layer
-        self.bn1 = nn.BatchNorm1d(128)
-        
-        self.fc2 = nn.Linear(128, 64)
-        self.bn2 = nn.BatchNorm1d(64)
-        
-        self.fc3 = nn.Linear(64, 32)
-        self.bn3 = nn.BatchNorm1d(32)
-        
-        self.fc4 = nn.Linear(32, 3)
-        
-        self.dropout = nn.Dropout(0.3)
-        self.relu = nn.LeakyReLU(0.1)
-        
-        self._init_weights()
-
-    def _init_weights(self):
-        for m in self.modules():
-            if isinstance(m, nn.Linear):
-                nn.init.xavier_normal_(m.weight)
-                nn.init.constant_(m.bias, 0)
-            elif isinstance(m, nn.BatchNorm1d):
-                nn.init.constant_(m.weight, 1)
-                nn.init.constant_(m.bias, 0)
+        super().__init__()
+        # Match the saved model structure
+        self.model = nn.Sequential(
+            nn.Linear(4, 64),
+            nn.ReLU(),
+            nn.BatchNorm1d(64),
+            nn.Dropout(0.3),
+            
+            nn.Linear(64, 32),
+            nn.ReLU(),
+            nn.BatchNorm1d(32),
+            nn.Dropout(0.2),
+            
+            nn.Linear(32, 16),
+            nn.ReLU(),
+            nn.BatchNorm1d(16),
+            
+            nn.Linear(16, 3)
+        )
 
     def forward(self, x):
-        x = self.dropout(self.relu(self.bn1(self.fc1(x))))
-        x = self.dropout(self.relu(self.bn2(self.fc2(x))))
-        x = self.dropout(self.relu(self.bn3(self.fc3(x))))
-        x = self.fc4(x)
-        return x
+        return self.model(x)
 
     def training_step(self, batch, batch_idx):
         x, y = batch
