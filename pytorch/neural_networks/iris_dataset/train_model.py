@@ -19,23 +19,23 @@ def train_and_save_model():
     # Load data with validation set
     X_train, X_val, y_train, y_val = load_and_preprocess_data(return_val=True)
     
-    # Augment training data
+    # Augment training data with more careful noise
     X_train_aug, y_train_aug = augment_data(
         X_train.numpy(), 
         y_train.numpy(),
-        noise_factor=0.01,  # Very small noise
-        n_synthetic=5      # More synthetic samples
+        noise_factor=0.02,  # Reduced noise
+        n_synthetic=8      # More synthetic samples
     )
     
     # Convert augmented data to tensors
     X_train_aug = torch.FloatTensor(X_train_aug)
     y_train_aug = torch.LongTensor(y_train_aug)
     
-    # Create data loaders
+    # Create data loaders with smaller batch size
     train_dataset = torch.utils.data.TensorDataset(X_train_aug, y_train_aug)
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
-        batch_size=32,
+        batch_size=16,  # Smaller batch size
         shuffle=True,
         num_workers=4,
         persistent_workers=True
@@ -44,35 +44,35 @@ def train_and_save_model():
     val_dataset = torch.utils.data.TensorDataset(X_val, y_val)
     val_loader = torch.utils.data.DataLoader(
         val_dataset,
-        batch_size=32,
+        batch_size=16,
         num_workers=4,
         persistent_workers=True
     )
     
-    # Initialize model with hyperparameters
+    # Initialize model with better hyperparameters
     hparams = {
-        'learning_rate': 0.001,
-        'weight_decay': 0.01,
-        'dropout_rate': 0.3
+        'learning_rate': 0.0005,  # Lower learning rate
+        'weight_decay': 0.02,     # Stronger regularization
+        'dropout_rate': 0.25      # Adjusted dropout
     }
     model = IrisClassifier(hparams=hparams)
     
-    # Early stopping callback
+    # Early stopping with more patience
     early_stopping = EarlyStopping(
         monitor='val_acc',
         mode='max',
-        patience=20,
+        patience=30,        # More patience
         min_delta=0.001,
         verbose=True
     )
     
-    # Create trainer
+    # Create trainer with more epochs
     trainer = pl.Trainer(
-        max_epochs=EPOCHS * 4,
+        max_epochs=EPOCHS * 5,  # Train longer
         callbacks=[early_stopping],
         enable_progress_bar=True,
         gradient_clip_val=0.5,
-        accumulate_grad_batches=2,
+        accumulate_grad_batches=4,  # Gradient accumulation
         precision=32,
         deterministic=True,
         accelerator='auto',
