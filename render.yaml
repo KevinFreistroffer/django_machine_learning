@@ -10,7 +10,7 @@ services:
     name: configs
     runtime: python
     buildCommand: "bash ./app/build.sh"
-    startCommand: "cd app && gunicorn configs.asgi:application -k uvicorn.workers.UvicornWorker"
+    startCommand: "cd app && gunicorn configs.asgi:application -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT"
     envVars:
       - key: DATABASE_URL
         fromDatabase:
