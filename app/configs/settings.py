@@ -29,7 +29,7 @@ if PYTORCH_DIR not in sys.path:
 SECRET_KEY = 'django-insecure--p$i)3y!+kmsra0(g+uy9fl8(v4wutv_+^65zl#d0ne@kjmii#'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False if os.getenv('RENDER') else True
 
 if not DEBUG:
     # Tell Django to copy static assets into a path called `staticfiles` (this is specific to Render)
@@ -39,9 +39,20 @@ if not DEBUG:
     STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 ALLOWED_HOSTS = [
-    # 'kevinf85.pythonanywhere.com'
+    'localhost',
+    '127.0.0.1',
+    'configs-ptge.onrender.com',  # Add Render domain
+    '.onrender.com',  # Allow all subdomains on render.com
 ]
 
+# For security in production
+if not DEBUG:
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = True
+    SECURE_SSL_REDIRECT = True
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
 
 # Application definition
 
