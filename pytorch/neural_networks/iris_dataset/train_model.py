@@ -16,6 +16,9 @@ from pytorch.neural_networks.iris_dataset.config import MODEL_PATH, BATCH_SIZE
 
 def train_and_save_model():
     """Train the model and save it"""
+    # Create necessary directories
+    os.makedirs(os.path.dirname(MODEL_PATH), exist_ok=True)
+    
     # Set seeds for reproducibility
     pl.seed_everything(42, workers=True)
     torch.backends.cudnn.deterministic = True
@@ -39,7 +42,7 @@ def train_and_save_model():
     # Create data loaders
     train_loader = DataLoader(
         TensorDataset(X_train_aug, y_train_aug),
-        batch_size=16,
+        batch_size=BATCH_SIZE,
         shuffle=True,
         drop_last=True
     )
@@ -49,12 +52,12 @@ def train_and_save_model():
         batch_size=len(X_val)
     )
     
-    # Initialize model using IrisNN
+    # Initialize model
     model = IrisNN()
     
     # Configure trainer
     trainer = pl.Trainer(
-        max_epochs=150,
+        max_epochs=100,
         accelerator='auto',
         devices=1,
         deterministic=True,
@@ -71,6 +74,7 @@ def train_and_save_model():
     # Train and save
     trainer.fit(model, train_loader, val_loader)
     torch.save(model.state_dict(), MODEL_PATH)
+    print(f"Model saved to {MODEL_PATH}")
 
 if __name__ == "__main__":
     train_and_save_model() 

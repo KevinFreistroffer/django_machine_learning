@@ -10,9 +10,9 @@ def load_model(model_path):
     """Load the trained model from checkpoint"""
     try:
         # Create a new model instance
-        model = IrisNN()  # Use IrisNN instead of IrisClassifier
+        model = IrisNN()
         
-        # Load state dict
+        # Load state dict with weights_only=True
         state_dict = torch.load(model_path, weights_only=True)
         model.load_state_dict(state_dict)
         model.eval()
