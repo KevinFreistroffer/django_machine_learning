@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # Exit on error
 set -o errexit
 
@@ -24,6 +24,7 @@ source venv/bin/activate
 
 echo "Installing requirements..."
 # Modify this line as needed for your package manager (pip, poetry, etc.)
+pip install --upgrade pip
 pip install -r requirements.txt
 
 echo "Creating staticfiles directory..."
