@@ -10,7 +10,7 @@ services:
     name: configs
     runtime: python
     buildCommand: "bash ./app/build.sh"
-    startCommand: "cd app && source venv/bin/activate && python -m gunicorn configs.asgi:application -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT --timeout 120 --workers 4 --worker-class uvicorn.workers.UvicornWorker --keep-alive 5 --access-logfile - --error-logfile -"
+    startCommand: "cd app && source venv/bin/activate && python -m gunicorn configs.asgi:application -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT"
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -22,5 +22,3 @@ services:
         value: 4
       - key: PORT
         value: 8000
-      - key: GUNICORN_TIMEOUT
-        value: 120
