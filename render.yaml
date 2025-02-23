@@ -10,7 +10,7 @@ services:
     name: configs
     runtime: python
     buildCommand: "bash ./app/build.sh"
-    startCommand: "python -m gunicorn django_machine_learning.app.asgi:application -k uvicorn.workers.UvicornWorker"
+    startCommand: "cd app && gunicorn configs.asgi:application -k uvicorn.workers.UvicornWorker"
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -20,3 +20,5 @@ services:
         generateValue: true
       - key: WEB_CONCURRENCY
         value: 4
+      - key: PORT
+        value: 8000
