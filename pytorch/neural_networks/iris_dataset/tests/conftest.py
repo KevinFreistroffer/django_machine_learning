@@ -8,7 +8,6 @@ from sklearn.metrics import confusion_matrix
 @pytest.fixture(scope="session")
 def test_data_path():
     """Create and return paths for test data"""
-    # Get absolute path to the project root
     base_path = os.path.abspath(os.path.join(
         os.path.dirname(__file__),  # tests directory
         '..',  # iris_dataset directory
