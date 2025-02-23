@@ -10,7 +10,15 @@ export PYTHONPATH="${PROJECT_ROOT}"
 # Change to project root directory
 cd "${PROJECT_ROOT}"
 
-# Train model first
+# Create necessary directories
+mkdir -p pytorch/neural_networks/iris_dataset/data
+mkdir -p pytorch/neural_networks/iris_dataset/checkpoints
+
+# Generate test data first
+echo "Generating test data..."
+PYTHONPATH="${PROJECT_ROOT}" python -m pytorch.neural_networks.iris_dataset.data.generate_test_data
+
+# Train model
 echo "Training model..."
 PYTHONPATH="${PROJECT_ROOT}" python -m pytorch.neural_networks.iris_dataset.train_model
 
